@@ -78,7 +78,7 @@ fn format_aligned_output(
 
   let mut first_row = vec![];
   if let Some((ratio, (v1, v2), line, passed)) = max_ratio_info {
-    let percent = (ratio - 1.0) * 100.0;
+    let percent = ((ratio - 1.0) * 100.0).abs();
     first_row.extend([
       format!("{percent:.2}"),
       format!("{v1:+.6E}"),
@@ -348,15 +348,15 @@ fn main() {
   if args.explain {
     println!("files: {bn1} and {bn2}\n");
     if let Some(mr) = args.max_ratio {
+      let percentage_diff = ((max_ratio - 1.0) * 100.0).abs();
       println!(
-        "maximum percent difference seen: {:.2}%",
-        (max_ratio - 1.0) * 100.0,
+        "maximum percent difference seen: {percentage_diff:.2}%",
       );
       println!(
         "the values: {:+.6E} and {:+.6E} (line {})",
         max_ratio_vals.0, max_ratio_vals.1, max_ratio_line
       );
-      let status = if max_ratio > mr { "FAILED" } else { "PASSED" };
+      let status = if percentage_diff > mr * 100.0 { "FAILED" } else { "PASSED" };
       println!("result: {status}");
     }
 
@@ -380,7 +380,8 @@ fn main() {
   } else if let Some(align) = &args.align {
     // Use aligned output format
     let max_ratio_info = args.max_ratio.map(|mr| {
-      let passed = max_ratio <= mr;
+      let percentage_diff = ((max_ratio - 1.0) * 100.0).abs();
+      let passed = percentage_diff <= mr * 100.0;
       (max_ratio, max_ratio_vals, max_ratio_line, passed)
     });
 
@@ -393,12 +394,13 @@ fn main() {
   } else {
     print!("{bn1} {bn2} ");
     if let Some(mr) = args.max_ratio {
-      print!("{:.2}", (max_ratio - 1.0) * 100.0,);
+      let percentage_diff = ((max_ratio - 1.0) * 100.0).abs();
+      print!("{percentage_diff:.2}");
       print!(
         " {:+.6E} {:+.6E} {}",
         max_ratio_vals.0, max_ratio_vals.1, max_ratio_line
       );
-      let status = if max_ratio > mr { "FAILED" } else { "PASSED" };
+      let status = if percentage_diff > mr * 100.0 { "FAILED" } else { "PASSED" };
       print!(" {status}");
     }
 
