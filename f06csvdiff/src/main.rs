@@ -4,6 +4,28 @@ use regex::Regex;
 use std::path::PathBuf;
 use std::process;
 
+#[derive(Clone, Debug)]
+enum Alignment {
+  Left,
+  Right,
+  Center,
+}
+
+impl std::str::FromStr for Alignment {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    match s.to_lowercase().as_str() {
+      "left" => Ok(Alignment::Left),
+      "right" => Ok(Alignment::Right),
+      "center" => Ok(Alignment::Center),
+      _ => Err(format!(
+        "Invalid alignment: {s}. Must be left, right, or center"
+      )),
+    }
+  }
+}
+
 /// Diffs floating-point numbers at corresponding positions within two CSVs.
 ///
 /// Made for usage alongside f06csv.
@@ -22,8 +44,106 @@ struct Args {
   delim: char,
   #[arg(long)]
   explain: bool,
+  #[arg(long, value_name = "ALIGNMENT")]
+  align: Option<Alignment>,
   csv1: String,
   csv2: String,
+}
+
+fn align_text(text: &str, width: usize, alignment: &Alignment) -> String {
+  if text.len() >= width {
+    return text.to_string();
+  }
+
+  let padding = width - text.len();
+  match alignment {
+    Alignment::Left => format!("{text}{}", " ".repeat(padding)),
+    Alignment::Right => format!("{}{text}", " ".repeat(padding)),
+    Alignment::Center => {
+      let left_pad = padding / 2;
+      let right_pad = padding - left_pad;
+      format!("{}{text}{}", " ".repeat(left_pad), " ".repeat(right_pad))
+    }
+  }
+}
+
+fn format_aligned_output(
+  filenames: (&str, &str),
+  max_ratio_info: Option<(f64, (f64, f64), usize, bool)>,
+  max_diff_info: Option<(f64, (f64, f64), usize, bool)>,
+  alignment: &Alignment,
+) {
+  let mut rows = Vec::new();
+  let mut headers = vec![filenames.0.to_string(), filenames.1.to_string()];
+
+  let mut first_row = vec![];
+  if let Some((ratio, (v1, v2), line, passed)) = max_ratio_info {
+    let percent = (ratio - 1.0) * 100.0;
+    first_row.extend([
+      format!("{percent:.2}"),
+      format!("{v1:+.6E}"),
+      format!("{v2:+.6E}"),
+      line.to_string(),
+      if passed {
+        "PASSED".to_string()
+      } else {
+        "FAILED".to_string()
+      },
+    ]);
+    headers.extend(
+      ["ratio_%", "val1_r", "val2_r", "line_r", "status_r"]
+        .iter()
+        .map(|s| s.to_string()),
+    );
+  }
+
+  if let Some((diff, (v1, v2), line, passed)) = max_diff_info {
+    first_row.extend([
+      format!("{diff:.2E}"),
+      format!("{v1:+.6E}"),
+      format!("{v2:+.6E}"),
+      line.to_string(),
+      if passed {
+        "PASSED".to_string()
+      } else {
+        "FAILED".to_string()
+      },
+    ]);
+    headers.extend(
+      ["abs_diff", "val1_d", "val2_d", "line_d", "status_d"]
+        .iter()
+        .map(|s| s.to_string()),
+    );
+  }
+
+  rows.push(first_row);
+
+  // Calculate column widths
+  let mut col_widths: Vec<usize> = headers.iter().map(|h| h.len()).collect();
+  for row in &rows {
+    for (i, cell) in row.iter().enumerate() {
+      if i < col_widths.len() {
+        col_widths[i] = col_widths[i].max(cell.len());
+      }
+    }
+  }
+
+  // Print aligned output
+  let aligned_headers: Vec<String> = headers
+    .iter()
+    .zip(&col_widths)
+    .map(|(header, &width)| align_text(header, width, alignment))
+    .collect();
+  println!("{}", aligned_headers.join(" "));
+
+  for row in &rows {
+    let aligned_row: Vec<String> = row
+      .iter()
+      .zip(&col_widths)
+      .map(|(cell, &width)| align_text(cell, width, alignment))
+      .collect();
+    println!("{}", aligned_row.join(" "));
+  }
 }
 
 fn main() {
@@ -51,60 +171,91 @@ fn main() {
       process::exit(1)
     });
 
-  let float_re = Regex::new(r"[-+]?[0-9]*\.?[0-9]+E[-+]?[0-9]+").unwrap();
+  let float_re = Regex::new(r"[-+]?[0-9]*\.?[0-9]+[Ee][-+]?[0-9]+").unwrap();
+
+  // First pass: determine which columns contain only floats in both files
+  let mut float_columns: Option<Vec<bool>> = None;
+
+  // Read all records to determine float columns
+  let records1: Vec<_> = rdr1
+    .records()
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap_or_else(|e| {
+      eprintln!("Error reading {}: {}", &args.csv1, e);
+      process::exit(1);
+    });
+  let records2: Vec<_> = rdr2
+    .records()
+    .collect::<Result<Vec<_>, _>>()
+    .unwrap_or_else(|e| {
+      eprintln!("Error reading {}: {}", &args.csv2, e);
+      process::exit(1);
+    });
+
+  if records1.len() != records2.len() {
+    eprintln!(
+      "Error: files have different number of rows ({} vs {})",
+      records1.len(),
+      records2.len()
+    );
+    process::exit(1);
+  }
+
+  for (line_num, (rec1, rec2)) in records1.iter().zip(&records2).enumerate() {
+    let line_num = line_num + 1;
+
+    // Column count check
+    let len1 = rec1.len();
+    let len2 = rec2.len();
+    if len1 != len2 {
+      eprintln!(
+        "Error: column count differs at line {}: {} has {}, {} has {}",
+        line_num, &args.csv1, len1, &args.csv2, len2
+      );
+      process::exit(1);
+    }
+
+    // Initialize float_columns on first row
+    if float_columns.is_none() {
+      float_columns = Some(vec![true; len1]);
+    }
+
+    let float_cols = float_columns.as_mut().unwrap();
+
+    // Check each column to see if it's a float in both files
+    for (i, (cell1, cell2)) in rec1.iter().zip(rec2.iter()).enumerate() {
+      if float_cols[i] {
+        let is_float1 =
+          float_re.is_match(cell1) && cell1.parse::<f64>().is_ok();
+        let is_float2 =
+          float_re.is_match(cell2) && cell2.parse::<f64>().is_ok();
+        if !is_float1 || !is_float2 {
+          float_cols[i] = false;
+        }
+      }
+    }
+  }
+
+  let float_cols = float_columns.unwrap_or_default();
 
   // Track maxima for reporting
   let mut max_abs_diff = 0.0;
   let mut max_abs_vals = (0.0, 0.0);
   let mut max_diff_line = 0;
-  let mut max_ratio = 0.0;
+  let mut max_ratio = 1.0; // Initialize to 1.0 (no difference)
   let mut max_ratio_vals = (0.0, 0.0);
   let mut max_ratio_line = 0;
 
-  let mut cols: Option<usize> = None;
-  let mut iter1 = rdr1.records();
-  let mut iter2 = rdr2.records();
-  let mut line_num = 1;
+  // Second pass: compare float values
+  for (line_num, (rec1, rec2)) in records1.iter().zip(&records2).enumerate() {
+    let line_num = line_num + 1;
 
-  while let (Some(r1), Some(r2)) = (iter1.next(), iter2.next()) {
-    let rec1 = r1.unwrap_or_else(|e| {
-      eprintln!("Error reading {} at line {}: {}", &args.csv1, line_num, e);
-      process::exit(1)
-    });
-    let rec2 = r2.unwrap_or_else(|e| {
-      eprintln!("Error reading {} at line {}: {}", &args.csv2, line_num, e);
-      process::exit(1)
-    });
-
-    // Column count check
-    let len1 = rec1.len();
-    let len2 = rec2.len();
-    if cols.is_none() {
-      if len1 != len2 {
-        eprintln!(
-          "Error: column count differs at line {}: {} has {}, {} has {}",
-          line_num, &args.csv1, len1, &args.csv2, len2
-        );
-        process::exit(1);
-      }
-      cols = Some(len1);
-    } else if Some(len1) != cols || Some(len2) != cols {
-      eprintln!(
-        "Error: inconsistent column count at line {} (expected {}), got {} and {}",
-        line_num,
-        cols.unwrap(),
-        len1,
-        len2
-      );
-      process::exit(1);
-    }
-
-    // Extract floats
+    // Extract floats from float columns only
     let f1: Vec<(usize, f64)> = rec1
       .iter()
       .enumerate()
       .filter_map(|(i, f)| {
-        if float_re.is_match(f) {
+        if float_cols[i] && float_re.is_match(f) {
           match f.parse() {
             Ok(v) => Some((i, v)),
             Err(_) => {
@@ -124,7 +275,7 @@ fn main() {
       .iter()
       .enumerate()
       .filter_map(|(i, f)| {
-        if float_re.is_match(f) {
+        if float_cols[i] && float_re.is_match(f) {
           match f.parse() {
             Ok(v) => Some((i, v)),
             Err(_) => {
@@ -142,10 +293,9 @@ fn main() {
       .collect();
 
     if f1.is_empty() && f2.is_empty() {
-      line_num += 1;
       continue;
     }
-    if f1.len() != f2.len() || f1.is_empty() || f2.is_empty() {
+    if f1.len() != f2.len() {
       eprintln!("Error: float layout differs at line {line_num}");
       process::exit(1);
     }
@@ -181,8 +331,6 @@ fn main() {
         max_ratio_line = line_num;
       }
     }
-
-    line_num += 1;
   }
 
   let pb1 = PathBuf::from(&args.csv1);
@@ -195,6 +343,7 @@ fn main() {
     .file_name()
     .map(|s| s.to_string_lossy())
     .unwrap_or(std::borrow::Cow::Borrowed("<?>"));
+
   // Report
   if args.explain {
     println!("files: {bn1} and {bn2}\n");
@@ -228,6 +377,19 @@ fn main() {
       };
       println!("result: {status}");
     }
+  } else if let Some(align) = &args.align {
+    // Use aligned output format
+    let max_ratio_info = args.max_ratio.map(|mr| {
+      let passed = max_ratio <= mr;
+      (max_ratio, max_ratio_vals, max_ratio_line, passed)
+    });
+
+    let max_diff_info = args.max_diff.map(|md| {
+      let passed = max_abs_diff <= md;
+      (max_abs_diff, max_abs_vals, max_diff_line, passed)
+    });
+
+    format_aligned_output((&bn1, &bn2), max_ratio_info, max_diff_info, align);
   } else {
     print!("{bn1} {bn2} ");
     if let Some(mr) = args.max_ratio {
