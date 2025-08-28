@@ -27,7 +27,7 @@ jobs:
         with:
           SRC_DIR: f06info
           RUSTTARGET: ${{ matrix.target }}
-          TOOLCHAIN_VERSION: 1.88
+          TOOLCHAIN_VERSION: stable
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06info-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06csv
@@ -37,7 +37,7 @@ jobs:
         with:
           SRC_DIR: f06csv
           RUSTTARGET: ${{ matrix.target }}
-          TOOLCHAIN_VERSION: 1.88
+          TOOLCHAIN_VERSION: stable
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06csv-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06diff
@@ -47,7 +47,7 @@ jobs:
         with:
           SRC_DIR: f06diff
           RUSTTARGET: ${{ matrix.target }}
-          TOOLCHAIN_VERSION: 1.88
+          TOOLCHAIN_VERSION: stable
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06diff-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06magic
@@ -57,7 +57,7 @@ jobs:
         with:
           SRC_DIR: f06magic
           RUSTTARGET: ${{ matrix.target }}
-          TOOLCHAIN_VERSION: 1.88
+          TOOLCHAIN_VERSION: stable
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06magic-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06csvdiff
@@ -67,6 +67,6 @@ jobs:
         with:
           SRC_DIR: f06csvdiff
           RUSTTARGET: ${{ matrix.target }}
-          TOOLCHAIN_VERSION: 1.88
+          TOOLCHAIN_VERSION: stable
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06csvdiff-${{ github.event.release.tag_name  }}-${{ matrix.target }}
