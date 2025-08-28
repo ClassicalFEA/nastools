@@ -1,10 +1,12 @@
 [workspace]
 resolver = "2"
 members = [
-  "f06",
-  "f06info",
-  "f06diff",
-  "nas_csv",
-  "f06csv",
-  "nastester"
-, "f06magic"]
+	"f06",
+	"f06csv",
+	"f06csvdiff",
+	"f06diff",
+	"f06info",
+	"f06magic",
+	"nas_csv",
+	"nastester",
+]
