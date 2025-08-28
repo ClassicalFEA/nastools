@@ -112,9 +112,9 @@ fn format_aligned_output(
       format!("{v2:+.6E}"),
       line.to_string(),
       if passed {
-        "PASSED".to_string()
+        "PASS".to_string()
       } else {
-        "FAILED".to_string()
+        "FAIL".to_string()
       },
     ]);
     headers.extend(
@@ -131,9 +131,9 @@ fn format_aligned_output(
       format!("{v2:+.6E}"),
       line.to_string(),
       if passed {
-        "PASSED".to_string()
+        "PASS".to_string()
       } else {
-        "FAILED".to_string()
+        "FAIL".to_string()
       },
     ]);
     headers.extend(
@@ -403,9 +403,9 @@ fn main() {
         max_ratio_vals.0, max_ratio_vals.1, max_ratio_line
       );
       let status = if percentage_diff > mr * 100.0 {
-        "FAILED"
+        "FAIL"
       } else {
-        "PASSED"
+        "PASS"
       };
       println!("result: {status}");
     }
@@ -420,11 +420,7 @@ fn main() {
         "the values: {:+.6E} and {:+.6E} (line {})",
         max_abs_vals.0, max_abs_vals.1, max_diff_line
       );
-      let status = if max_abs_diff > md {
-        "FAILED"
-      } else {
-        "PASSED"
-      };
+      let status = if max_abs_diff > md { "FAIL" } else { "PASS" };
       println!("result: {status}");
     }
   } else if let Some(align) = &args.align {
@@ -458,9 +454,9 @@ fn main() {
         max_ratio_vals.0, max_ratio_vals.1, max_ratio_line
       );
       let status = if percentage_diff > mr * 100.0 {
-        "FAILED"
+        "FAIL"
       } else {
-        "PASSED"
+        "PASS"
       };
       print!(" {status}");
     }
@@ -475,11 +471,7 @@ fn main() {
         "{:+.6E} {:+.6E} {}",
         max_abs_vals.0, max_abs_vals.1, max_diff_line
       );
-      let status = if max_abs_diff > md {
-        "FAILED"
-      } else {
-        "PASSED"
-      };
+      let status = if max_abs_diff > md { "FAIL" } else { "PASS" };
       print!(" {status}");
     }
     println!();
