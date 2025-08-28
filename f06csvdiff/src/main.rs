@@ -46,6 +46,8 @@ struct Args {
   explain: bool,
   #[arg(long, value_name = "ALIGNMENT")]
   align: Option<Alignment>,
+  #[arg(short = 'w', long, value_name = "WIDTH")]
+  width: Option<usize>,
   csv1: String,
   csv2: String,
 }
@@ -67,11 +69,33 @@ fn align_text(text: &str, width: usize, alignment: &Alignment) -> String {
   }
 }
 
+fn truncate_and_align_text(
+  text: &str,
+  width: usize,
+  alignment: &Alignment,
+) -> String {
+  if width == 0 {
+    return String::new();
+  }
+
+  let truncated = if text.len() > width {
+    if width >= 3 {
+      format!("{}...", &text[..width - 3])
+    } else {
+      ".".repeat(width)
+    }
+  } else {
+    text.to_string()
+  };
+
+  align_text(&truncated, width, alignment)
+}
 fn format_aligned_output(
   filenames: (&str, &str),
   max_ratio_info: Option<(f64, (f64, f64), usize, bool)>,
   max_diff_info: Option<(f64, (f64, f64), usize, bool)>,
   alignment: &Alignment,
+  fixed_width: Option<usize>,
 ) {
   let mut rows = Vec::new();
   let mut headers = vec![filenames.0.to_string(), filenames.1.to_string()];
@@ -119,20 +143,33 @@ fn format_aligned_output(
   rows.push(first_row);
 
   // Calculate column widths
-  let mut col_widths: Vec<usize> = headers.iter().map(|h| h.len()).collect();
-  for row in &rows {
-    for (i, cell) in row.iter().enumerate() {
-      if i < col_widths.len() {
-        col_widths[i] = col_widths[i].max(cell.len());
+  let col_widths: Vec<usize> = if let Some(fixed_width) = fixed_width {
+    // Use fixed width for all columns
+    vec![fixed_width; headers.len()]
+  } else {
+    // Calculate optimal width for each column
+    let mut widths: Vec<usize> = headers.iter().map(|h| h.len()).collect();
+    for row in &rows {
+      for (i, cell) in row.iter().enumerate() {
+        if i < widths.len() {
+          widths[i] = widths[i].max(cell.len());
+        }
       }
     }
-  }
+    widths
+  };
 
   // Print aligned output
   let aligned_headers: Vec<String> = headers
     .iter()
     .zip(&col_widths)
-    .map(|(header, &width)| align_text(header, width, alignment))
+    .map(|(header, &width)| {
+      if fixed_width.is_some() {
+        truncate_and_align_text(header, width, alignment)
+      } else {
+        align_text(header, width, alignment)
+      }
+    })
     .collect();
   println!("{}", aligned_headers.join(" "));
 
@@ -140,7 +177,13 @@ fn format_aligned_output(
     let aligned_row: Vec<String> = row
       .iter()
       .zip(&col_widths)
-      .map(|(cell, &width)| align_text(cell, width, alignment))
+      .map(|(cell, &width)| {
+        if fixed_width.is_some() {
+          truncate_and_align_text(cell, width, alignment)
+        } else {
+          align_text(cell, width, alignment)
+        }
+      })
       .collect();
     println!("{}", aligned_row.join(" "));
   }
@@ -392,7 +435,13 @@ fn main() {
       (max_abs_diff, max_abs_vals, max_diff_line, passed)
     });
 
-    format_aligned_output((&bn1, &bn2), max_ratio_info, max_diff_info, align);
+    format_aligned_output(
+      (&bn1, &bn2),
+      max_ratio_info,
+      max_diff_info,
+      align,
+      args.width,
+    );
   } else {
     print!("{bn1} {bn2} ");
     if let Some(mr) = args.max_ratio {
