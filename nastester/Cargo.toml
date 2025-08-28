@@ -20,11 +20,11 @@ uuid = { version = "1.8", features = ["serde", "v4"] }
 num_cpus = "1.16"
 
 [dependencies.f06]
-version = "0.5"
+version = "0.6"
 path = "../f06"
 
 [dependencies.nas_csv]
-version = "0.5"
+version = "0.6"
 path = "../nas_csv"
 
 [dependencies.egui]

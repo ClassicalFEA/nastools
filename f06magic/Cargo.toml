@@ -1,7 +1,7 @@
 [package]
 name = "f06magic"
 authors = ["Bruno Borges Paschoalinoto <bruno@paschoalinoto.com>"]
-version = "0.1.0"
+version = "0.6.0"
 edition = "2024"
 
 [dependencies]
@@ -13,5 +13,5 @@ toml = "0.8"
 num = "0.4"
 
 [dependencies.f06]
-version = "0.5"
+version = "0.6"
 path = "../f06"
