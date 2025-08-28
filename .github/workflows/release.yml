@@ -47,3 +47,21 @@ jobs:
           RUSTTARGET: ${{ matrix.target }}
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06diff-${{ github.event.release.tag_name  }}-${{ matrix.target }}
+      - name: Compile and release f06magic
+        uses: rust-build/rust-build.action@v1.4.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          SRC_DIR: f06magic
+          RUSTTARGET: ${{ matrix.target }}
+          ARCHIVE_TYPES: ${{ matrix.archive }}
+          ARCHIVE_NAME: f06magic-${{ github.event.release.tag_name  }}-${{ matrix.target }}
+      - name: Compile and release f06csvdiff
+        uses: rust-build/rust-build.action@v1.4.4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          SRC_DIR: f06csvdiff
+          RUSTTARGET: ${{ matrix.target }}
+          ARCHIVE_TYPES: ${{ matrix.archive }}
+          ARCHIVE_NAME: f06csvdiff-${{ github.event.release.tag_name  }}-${{ matrix.target }}

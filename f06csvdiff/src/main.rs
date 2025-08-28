@@ -349,14 +349,16 @@ fn main() {
     println!("files: {bn1} and {bn2}\n");
     if let Some(mr) = args.max_ratio {
       let percentage_diff = ((max_ratio - 1.0) * 100.0).abs();
-      println!(
-        "maximum percent difference seen: {percentage_diff:.2}%",
-      );
+      println!("maximum percent difference seen: {percentage_diff:.2}%",);
       println!(
         "the values: {:+.6E} and {:+.6E} (line {})",
         max_ratio_vals.0, max_ratio_vals.1, max_ratio_line
       );
-      let status = if percentage_diff > mr * 100.0 { "FAILED" } else { "PASSED" };
+      let status = if percentage_diff > mr * 100.0 {
+        "FAILED"
+      } else {
+        "PASSED"
+      };
       println!("result: {status}");
     }
 
@@ -400,7 +402,11 @@ fn main() {
         " {:+.6E} {:+.6E} {}",
         max_ratio_vals.0, max_ratio_vals.1, max_ratio_line
       );
-      let status = if percentage_diff > mr * 100.0 { "FAILED" } else { "PASSED" };
+      let status = if percentage_diff > mr * 100.0 {
+        "FAILED"
+      } else {
+        "PASSED"
+      };
       print!(" {status}");
     }
 
