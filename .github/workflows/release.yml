@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Compile and release f06info
-        uses: rust-build/rust-build.action@v1.4.4
+        uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -30,7 +30,7 @@ jobs:
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06info-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06csv
-        uses: rust-build/rust-build.action@v1.4.4
+        uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -39,7 +39,7 @@ jobs:
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06csv-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06diff
-        uses: rust-build/rust-build.action@v1.4.4
+        uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -48,7 +48,7 @@ jobs:
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06diff-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06magic
-        uses: rust-build/rust-build.action@v1.4.4
+        uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -57,7 +57,7 @@ jobs:
           ARCHIVE_TYPES: ${{ matrix.archive }}
           ARCHIVE_NAME: f06magic-${{ github.event.release.tag_name  }}-${{ matrix.target }}
       - name: Compile and release f06csvdiff
-        uses: rust-build/rust-build.action@v1.4.4
+        uses: rust-build/rust-build.action@v1.4.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
