@@ -22,15 +22,15 @@ fn test_decode_nasfloat() {
   for msign in signs.iter() {
     for m in mantissas.iter() {
       // test just a mantissa
-      parsed(&format!("{}{}", msign, m));
+      parsed(&format!("{msign}{m}"));
       for sep in seps.iter() {
         for e in exponents.iter() {
           for esign in signs.iter() {
             if sep.is_empty() && esign.is_empty() {
               continue;
             }
-            let nf = format!("{}{}{}{}{}", msign, m, sep, esign, e);
-            let rf = format!("{}{}e{}{}", msign, m, esign, e);
+            let nf = format!("{msign}{m}{sep}{esign}{e}");
+            let rf = format!("{msign}{m}e{esign}{e}");
             direct(&nf, rf.parse().unwrap());
           }
         }
@@ -40,7 +40,7 @@ fn test_decode_nasfloat() {
   // some weird zeros that we don't really care about
   for ksep in seps.iter().chain(signs.iter()).filter(|s| !s.is_empty()) {
     for msign in signs.iter() {
-      may_fail(&format!("{}.{}.", msign, ksep), 0.0);
+      may_fail(&format!("{msign}.{ksep}."), 0.0);
     }
   }
   // now some bad cases

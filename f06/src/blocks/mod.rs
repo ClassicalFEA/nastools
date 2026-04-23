@@ -161,10 +161,7 @@ where
   /// the row within the underlying matrixes this was put in.
   pub(crate) fn insert_raw(&mut self, row_index: R, row: &[S; W]) -> usize {
     if self.row_indexes.contains_key(&row_index) {
-      warn!(
-        "tried to insert the same line twice! index: {:?}",
-        row_index
-      );
+      warn!("tried to insert the same line twice! index: {row_index:?}");
     }
     let irow: usize;
     if let Some(mut mat) = self.data.take() {

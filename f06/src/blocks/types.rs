@@ -397,6 +397,6 @@ impl FromStr for BlockType {
         return Ok(*cand);
       }
     }
-    return Err(format!("invalid block type name \"{}\"", s));
+    return Err(format!("invalid block type name \"{s}\""));
   }
 }

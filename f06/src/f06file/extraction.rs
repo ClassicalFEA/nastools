@@ -260,8 +260,8 @@ impl Display for ExtractionError {
         tried.type_name(),
         against.type_name()
       ),
-      Self::MissingRow(ri) => write!(f, "no such row ({})", ri),
-      Self::MissingColumn(ci) => write!(f, "no such column ({})", ci),
+      Self::MissingRow(ri) => write!(f, "no such row ({ri})"),
+      Self::MissingColumn(ci) => write!(f, "no such column ({ci})"),
       Self::BlockIsEmpty => write!(f, "block is empty"),
     };
   }

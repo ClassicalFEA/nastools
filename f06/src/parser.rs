@@ -5,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::Display;
 use std::fs::File;
-use std::io::{self, BufRead, BufReader};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 use log::{debug, error, warn};
@@ -60,8 +60,7 @@ impl Display for ParserCrash {
     return match self {
       ParserCrash::NoSupportedSolverDetected(i) => write!(
         f,
-        "Found a block start on line {} before knowing the solver!",
-        i
+        "Found a block start on line {i} before knowing the solver!"
       ),
       ParserCrash::IOError(ioe) => ioe.fmt(f),
     };

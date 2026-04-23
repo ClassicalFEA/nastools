@@ -443,7 +443,7 @@ impl BlockDecoder for QuadStressesDecoder {
           if let Some(ref mut ri) = self.cur_row {
             ri.flip_side();
           } else {
-            warn!("cont line without row index at {}", line);
+            warn!("cont line without row index at {line}");
             return LineResponse::Abort;
           }
         } else {
@@ -453,7 +453,7 @@ impl BlockDecoder for QuadStressesDecoder {
           } else if let Some(gid) = ints.last() {
             ElementPoint::Corner((*gid as usize).into())
           } else {
-            warn!("no point at {}", line);
+            warn!("no point at {line}");
             return LineResponse::Abort;
           };
           let side = ElementSide::Bottom;
@@ -462,7 +462,7 @@ impl BlockDecoder for QuadStressesDecoder {
           } else if let Some(ri) = self.cur_row {
             ri.element.eid
           } else {
-            warn!("no eid at {}", line);
+            warn!("no eid at {line}");
             return LineResponse::Abort;
           };
           self.cur_row.replace(ElementSidedPoint {
@@ -481,7 +481,7 @@ impl BlockDecoder for QuadStressesDecoder {
           if let Some(ref mut ri) = self.cur_row {
             ri.flip_side();
           } else {
-            warn!("cont line without row index at {}", line);
+            warn!("cont line without row index at {line}");
             return LineResponse::Abort;
           }
         } else {
@@ -491,7 +491,7 @@ impl BlockDecoder for QuadStressesDecoder {
           } else if let Some(gid) = ints.last() {
             ElementPoint::Corner((*gid as usize).into())
           } else {
-            warn!("no point at {}", line);
+            warn!("no point at {line}");
             return LineResponse::Abort;
           };
           let side = ElementSide::Bottom;
@@ -500,7 +500,7 @@ impl BlockDecoder for QuadStressesDecoder {
           } else if let Some(ri) = self.cur_row {
             ri.element.eid
           } else {
-            warn!("no eid at {}", line);
+            warn!("no eid at {line}");
             return LineResponse::Abort;
           };
           self.cur_row.replace(ElementSidedPoint {
@@ -519,7 +519,7 @@ impl BlockDecoder for QuadStressesDecoder {
       self.data.insert_raw(rid, &cols);
       return LineResponse::Data;
     } else {
-      warn!("found data but couldn't construct row index at {}", line);
+      warn!("found data but couldn't construct row index at {line}");
       return LineResponse::Abort;
     }
   }
@@ -639,7 +639,7 @@ impl BlockDecoder for QuadForcesDecoder {
           } else if let Some(gid) = ints.last() {
             ElementPoint::Corner((*gid as usize).into())
           } else {
-            warn!("no point at {}", line);
+            warn!("no point at {line}");
             return LineResponse::Abort;
           };
           eid = if let Some(x) = ints.get(1) {
@@ -647,7 +647,7 @@ impl BlockDecoder for QuadForcesDecoder {
           } else if let Some(ri) = self.cur_row {
             ri.element.eid
           } else {
-            warn!("no eid at {}", line);
+            warn!("no eid at {line}");
             return LineResponse::Abort;
           };
         } else {
@@ -656,7 +656,7 @@ impl BlockDecoder for QuadForcesDecoder {
           eid = if let Some(x) = ints.last() {
             *x as usize
           } else {
-            warn!("no eid at {}", line);
+            warn!("no eid at {line}");
             return LineResponse::Abort;
           };
         }
@@ -675,7 +675,7 @@ impl BlockDecoder for QuadForcesDecoder {
       self.data.insert_raw(rid, &cols);
       return LineResponse::Data;
     } else {
-      warn!("found data but couldn't construct row index at {}", line);
+      warn!("found data but couldn't construct row index at {line}");
       return LineResponse::Abort;
     }
   }
@@ -980,7 +980,7 @@ impl BlockDecoder for TriaStressesDecoder {
         side,
       }
     } else {
-      warn!("no eid on data line on {}", line);
+      warn!("no eid on data line on {line}");
       return LineResponse::Abort;
     };
     self.data.insert_raw(esp, &vals);
@@ -1162,7 +1162,7 @@ impl BlockDecoder for BarStressesDecoder {
         Some(Solver::Simcenter) => match i1 {
           Some(ui1) => ui1,
           None => {
-            warn!("missing uid on data line {}", line);
+            warn!("missing uid on data line {line}");
             return LineResponse::Abort;
           }
         },
@@ -1208,7 +1208,7 @@ impl BlockDecoder for BarStressesDecoder {
       }
     } else if extract_reals::<7>(line).is_some() {
       // line has floats but no current line
-      warn!("found second row without ever seeing a first, at {}", line);
+      warn!("found second row without ever seeing a first, at {line}");
       return LineResponse::Abort;
     } else {
       // non-eid line with no data.
@@ -1268,7 +1268,7 @@ impl BlockDecoder for Elas1StressesDecoder {
           added += 1;
         }
         _ => {
-          warn!("more than one float in elas1 stress/strain line {}", line);
+          warn!("more than one float in elas1 stress/strain line {line}");
           return LineResponse::Abort;
         }
       };

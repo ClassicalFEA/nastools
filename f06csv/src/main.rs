@@ -132,7 +132,7 @@ fn main() -> Result<(), Box<dyn Error>> {
   } else if args.input.is_file() {
     if let Some(bn) = args.input.file_name() {
       if let Some(sbn) = bn.to_str() {
-        info!("Parsing {}...", sbn);
+        info!("Parsing {sbn}...");
       }
     } else {
       info!("Parsing...");

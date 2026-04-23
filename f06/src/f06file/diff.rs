@@ -28,13 +28,13 @@ impl Display for NonCompareReason {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     return match self {
       NonCompareReason::NoCounterpart(Some(file)) => {
-        write!(f, "no counterpart in {}", file)
+        write!(f, "no counterpart in {file}")
       }
       NonCompareReason::NoCounterpart(None) => {
         write!(f, "no counterpart in one of the files")
       }
       NonCompareReason::NotUniqueInOne(Some(file)) => {
-        write!(f, "not unique in {}", file)
+        write!(f, "not unique in {file}")
       }
       NonCompareReason::NotUniqueInOne(None) => {
         write!(f, "not unique in one of the files")
@@ -43,7 +43,7 @@ impl Display for NonCompareReason {
         write!(f, "not unique in either file")
       }
       NonCompareReason::NotCompatible(reason) => {
-        write!(f, "incompatibility: {}", reason)
+        write!(f, "incompatibility: {reason}")
       }
     };
   }

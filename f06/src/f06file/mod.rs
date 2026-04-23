@@ -118,8 +118,8 @@ impl F06File {
           let full_ok = can_merge.is_ok() && (conflicts.is_empty() || !clean);
           if !full_ok {
             debug!("a merge failed! check this out:");
-            debug!("{:?}", can_merge);
-            debug!("{:?}", conflicts);
+            debug!("{can_merge:?}");
+            debug!("{conflicts:?}");
           }
           return full_ok;
         })
@@ -133,7 +133,7 @@ impl F06File {
           Ok(MergeResult::Partial { .. }) => {
             panic!("partial merge not implemented yet!")
           }
-          Err(x) => panic!("pre-merge check failed: {:#?}", x),
+          Err(x) => panic!("pre-merge check failed: {x:#?}"),
         };
         num_merges += 1;
         // put it back since it could have other potential merges

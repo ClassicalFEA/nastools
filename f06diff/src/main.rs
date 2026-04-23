@@ -57,7 +57,7 @@ fn main() -> Result<(), ParserCrash> {
   let mut first = if args.first.is_file() {
     if let Some(bn) = args.first.file_name() {
       if let Some(sbn) = bn.to_str() {
-        info!("Loading {}...", sbn);
+        info!("Loading {sbn}...");
       }
     } else {
       info!("Loading first file...");
@@ -75,7 +75,7 @@ fn main() -> Result<(), ParserCrash> {
   } else if args.second.is_file() {
     if let Some(bn) = args.second.file_name() {
       if let Some(sbn) = bn.to_str() {
-        info!("Loading {}...", sbn);
+        info!("Loading {sbn}...");
       }
     } else {
       info!("Loading first file...");
@@ -134,7 +134,7 @@ fn main() -> Result<(), ParserCrash> {
       format!("{} decoded block{} ({} unique)", nb, pl(nb), nbu)
     }
   };
-  let bc0 = format!("{}- Decoded blocks: ", INDENT);
+  let bc0 = format!("{INDENT}- Decoded blocks: ");
   if nb1 == nb2 && nb1 == nb1u && nb1u == nb2u {
     info!("{}both have {} unique decoded block{}", bc0, nb1u, pl(nb1));
   } else {
@@ -148,9 +148,9 @@ fn main() -> Result<(), ParserCrash> {
   // warnings and fatals
   let countwarn = |a: usize, b: usize, name: &str| {
     if a == b {
-      info!("{}- {}: both have {};", INDENT, name, a);
+      info!("{INDENT}- {name}: both have {a};");
     } else {
-      info!("{}- {}: first has {}, second has {};", INDENT, name, a, b);
+      info!("{INDENT}- {name}: first has {a}, second has {b};");
     }
   };
   countwarn(first.warnings.len(), second.warnings.len(), "Warnings");
@@ -214,7 +214,7 @@ fn main() -> Result<(), ParserCrash> {
       br.block_type.desc().to_lowercase()
     );
     if flags.is_empty() {
-      info!("{}{}- No values flagged.", INDENT, INDENT);
+      info!("{INDENT}{INDENT}- No values flagged.");
     } else {
       // first a summary
       let rows = flags
@@ -250,13 +250,12 @@ fn main() -> Result<(), ParserCrash> {
       // now report specific positions
       let t = match args.print_max_flags.cmp(&0) {
         std::cmp::Ordering::Less => {
-          info!("{}{}- Details of all flagged position(s):", INDENT, INDENT);
+          info!("{INDENT}{INDENT}- Details of all flagged position(s):");
           flags.len()
         }
         std::cmp::Ordering::Equal => {
           info!(
-            "{}{}- Details of flagged positions not requested.",
-            INDENT, INDENT
+            "{INDENT}{INDENT}- Details of flagged positions not requested."
           );
           continue;
         }

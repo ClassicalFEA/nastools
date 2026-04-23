@@ -78,7 +78,7 @@ pub(crate) fn decode_nasfloat(s: &str) -> Option<f64> {
         mark(i);
       }
       // should be unreachable
-      _ => panic!("unreachable branch 1 in decoding nasfloat \"{}\"", s),
+      _ => panic!("unreachable branch 1 in decoding nasfloat \"{s}\""),
     };
     if step.get() > 3 {
       break;
@@ -102,7 +102,7 @@ pub(crate) fn decode_nasfloat(s: &str) -> Option<f64> {
     // found mantissa and exponent
     4 => return Some(mantissa()? * 10.0_f64.powi(exponent()?)),
     // should be unreachable
-    _ => panic!("unreachable branch 2 in returning nasfloat \"{}\"", s),
+    _ => panic!("unreachable branch 2 in returning nasfloat \"{s}\""),
   };
 }
 
@@ -470,19 +470,9 @@ pub fn fmt_f64<W: Write>(
   omit_plus: bool,
 ) -> std::fmt::Result {
   let mut num = if omit_plus {
-    format!(
-      "{:.precision$e}",
-      //if num.is_sign_negative() { "" } else { "+" },
-      num,
-      precision = precision
-    )
+    format!("{num:.precision$e}")
   } else {
-    format!(
-      "{:+.precision$e}",
-      //if num.is_sign_negative() { "" } else { "+" },
-      num,
-      precision = precision
-    )
+    format!("{num:+.precision$e}")
   };
   // safe to `unwrap` as `num` is guaranteed to contain `'e'`
   let exp = num.split_off(num.find('e').unwrap());
@@ -498,7 +488,7 @@ pub fn fmt_f64<W: Write>(
     ('+', &exp[1..])
   };
   let e = if capital_e { 'E' } else { 'e' };
-  num.push_str(&format!("{}{}{:0>pad$}", e, sign, exp, pad = exp_pad));
+  num.push_str(&format!("{e}{sign}{exp:0>exp_pad$}"));
 
-  return write!(f, "{:>width$}", num, width = width);
+  return write!(f, "{num:>width$}");
 }

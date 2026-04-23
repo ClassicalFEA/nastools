@@ -230,7 +230,7 @@ impl FromStr for Dof {
       "rx" => DOF_RX,
       "ry" => DOF_RY,
       "rz" => DOF_RZ,
-      _ => return Err(format!("invalid DoF string \"{}\"", s)),
+      _ => return Err(format!("invalid DoF string \"{s}\"")),
     });
   }
 }

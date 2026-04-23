@@ -42,7 +42,7 @@ fn main() -> Result<(), ParserCrash> {
   } else if args.file.is_file() {
     if let Some(bn) = args.file.file_name() {
       if let Some(sbn) = bn.to_str() {
-        info!("Parsing {}...", sbn);
+        info!("Parsing {sbn}...");
       }
     } else {
       info!("Parsing...");
@@ -56,15 +56,15 @@ fn main() -> Result<(), ParserCrash> {
   info!("Done parsing.");
   let solver_name = f06.flavour.solver.map_or("unknown", |s| s.name());
   let soltype = f06.flavour.soltype.map_or("unknown", |st| st.name());
-  info!("Solver is {}.", solver_name);
-  info!("Analysis type is {}.", soltype);
+  info!("Solver is {solver_name}.");
+  info!("Analysis type is {soltype}.");
   // print warnings
   if f06.warnings.is_empty() {
     info!("No warnings found.");
   } else {
     info!("The following warnings were found:");
     for (line, text) in f06.warnings.iter() {
-      info!("{}- Line {}: {}", INDENT, line, text);
+      info!("{INDENT}- Line {line}: {text}");
     }
   }
   // print fatals
@@ -73,7 +73,7 @@ fn main() -> Result<(), ParserCrash> {
   } else {
     info!("The following fatal errors were found:");
     for (line, text) in f06.fatal_errors.iter() {
-      info!("{}- Line {}: {}", INDENT, line, text);
+      info!("{INDENT}- Line {line}: {text}");
     }
   }
   // print merge/block info
@@ -97,7 +97,7 @@ fn main() -> Result<(), ParserCrash> {
     };
     info!("Supported blocks found:");
     for subcase in f06.subcases() {
-      info!("{}- Subcase {}:", INDENT, subcase);
+      info!("{INDENT}- Subcase {subcase}:");
       for block in f06.block_search(None, Some(subcase), false) {
         info!(
           "{}{}- {}: {} rows, {} columns",
@@ -134,7 +134,7 @@ fn main() -> Result<(), ParserCrash> {
         2 => format!("ines {} and {}", ph.start, ph.lines().last().unwrap()),
         _ => format!("ines {}-{}", ph.start, ph.lines().last().unwrap()),
       };
-      info!("{}- L{}: \"{}\"", INDENT, countlines, txt);
+      info!("{INDENT}- L{countlines}: \"{txt}\"");
       if ntimes > 1 {
         info!(
           "{}{}- (other {} occurences omitted)",

@@ -244,7 +244,7 @@ impl Display for ForceOrigin {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     return match self {
       Self::Load => write!(f, "APPLIED LOAD"),
-      Self::Element { elem } => write!(f, "{}", elem),
+      Self::Element { elem } => write!(f, "{elem}"),
       Self::SinglePointConstraint => write!(f, "SINGLE-POINT CONSTRAINT"),
       Self::MultiPointConstraint => write!(f, "MULTI-POINT CONSTRAINT"),
     };
@@ -404,10 +404,10 @@ impl Display for ElementPoint {
     return match self {
       Self::Centroid => write!(f, "CENTROID"),
       Self::Corner(GridPointRef { gid }) => {
-        write!(f, "CORNER AT GRID {}", gid)
+        write!(f, "CORNER AT GRID {gid}")
       }
       Self::Midpoint(GridPointRef { gid }) => {
-        write!(f, "MIDPOINT AT GRID {}", gid)
+        write!(f, "MIDPOINT AT GRID {gid}")
       }
       Self::Anywhere => write!(f, "ANYWHERE IN THE ELEMENT"),
     };
@@ -639,9 +639,9 @@ impl Display for BarForceField {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     return match self {
       BarForceField::BendMoment { end, plane } => {
-        write!(f, "BEND-MOMENT {}, {}", end, plane)
+        write!(f, "BEND-MOMENT {end}, {plane}")
       }
-      BarForceField::Shear { plane } => write!(f, "SHEAR {}", plane),
+      BarForceField::Shear { plane } => write!(f, "SHEAR {plane}"),
       BarForceField::AxialForce => write!(f, "AXIAL FORCE"),
       BarForceField::Torque => write!(f, "TORQUE"),
     };
@@ -811,12 +811,12 @@ impl Display for BarStressField {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     return match self {
       Self::AtRecoveryPoint { end, point } => {
-        write!(f, "{}, RECOVERY POINT {}", end, point)
+        write!(f, "{end}, RECOVERY POINT {point}")
       }
       Self::Axial => write!(f, "AXIAL"),
-      Self::MaxAt(end) => write!(f, "MAX AT {}", end),
-      Self::MinAt(end) => write!(f, "MIN AT {}", end),
-      Self::SafetyMargin(dir) => write!(f, "MARGIN OF SAFETY FOR {}", dir),
+      Self::MaxAt(end) => write!(f, "MAX AT {end}"),
+      Self::MinAt(end) => write!(f, "MIN AT {end}"),
+      Self::SafetyMargin(dir) => write!(f, "MARGIN OF SAFETY FOR {dir}"),
     };
   }
 }
