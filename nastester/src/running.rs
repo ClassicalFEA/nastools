@@ -62,6 +62,9 @@ pub(crate) enum RunError {
   ExtensionMixup,
   /// The F06 parser failed for some reason.
   #[from]
+  ParserCrash(ParserCrash),
+  /// Unidentified I/O error.
+  #[from]
   IoError(std::io::Error),
   /// Couldn't create a temp dir.
   TempdirCreationFailed,
@@ -95,6 +98,7 @@ impl Display for RunError {
       ),
       RunError::PathError => write!(f, "path processing error"),
       RunError::ExtensionMixup => write!(f, "both .f06 and .F06 exist"),
+      RunError::ParserCrash(pc) => write!(f, "Parser failed: {}", pc),
       RunError::IoError(ioe) => write!(f, "I/O error: {}", ioe),
       RunError::TempdirCreationFailed => write!(f, "tempdir creation failed"),
       RunError::SubprocessFailed(e) => write!(f, "subprocess error: {}", e),
@@ -113,7 +117,8 @@ impl RunError {
       RunError::SolverFailed(_, None) => "solver crashed",
       RunError::PathError => "path processing error",
       RunError::ExtensionMixup => "both .f06 and .F06 exist",
-      RunError::IoError(_) => "I/O error",
+      RunError::ParserCrash(_) => "parser failed",
+      RunError::IoError(_) => "i/o error",
       RunError::TempdirCreationFailed => "tempdir creation failed",
       RunError::SubprocessFailed(_) => "subprocess error",
     };

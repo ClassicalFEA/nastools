@@ -27,7 +27,7 @@ struct Cli {
 
 const INDENT: &str = "  ";
 
-fn main() -> io::Result<()> {
+fn main() -> Result<(), ParserCrash> {
   // init cli stuff
   let args = Cli::parse();
   let log_level = if args.verbose {

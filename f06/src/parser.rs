@@ -2,6 +2,8 @@
 //! structures and enums.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::error::Error;
+use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
@@ -41,6 +43,38 @@ pub enum ParserResponse {
   /// This line indicates the beginning of a block we don't even know yet.
   PotentialHeader,
 }
+
+/// A cause of crash for the parser.
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum ParserCrash {
+  /// A supported solver was not identified by the time a block start was found.
+  /// Contains the line where the solver found the block start.
+  NoSupportedSolverDetected(usize),
+  /// An I/O error was caught.
+  IOError(std::io::Error),
+}
+
+impl Display for ParserCrash {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    return match self {
+      ParserCrash::NoSupportedSolverDetected(i) => write!(
+        f,
+        "Found a block start on line {} before knowing the solver!",
+        i
+      ),
+      ParserCrash::IOError(ioe) => ioe.fmt(f),
+    };
+  }
+}
+
+impl From<std::io::Error> for ParserCrash {
+  fn from(value: std::io::Error) -> Self {
+    return Self::IOError(value);
+  }
+}
+
+impl Error for ParserCrash {}
 
 /// This is the F06 parser -- it doesn't care how lines are fed into it.
 /// It's one-pass, single-thread. There might be a parallel one later.
@@ -351,7 +385,9 @@ impl OnePassParser {
   }
 
   /// Parses from a BufRead instance.
-  pub fn parse_bufread<R: BufRead>(mut reader: R) -> io::Result<F06File> {
+  pub fn parse_bufread<R: BufRead>(
+    mut reader: R,
+  ) -> Result<F06File, ParserCrash> {
     let mut parser = Self::new();
     let mut buf = vec![];
     while reader.read_until(b'\n', &mut buf).is_ok() {
@@ -369,10 +405,11 @@ impl OnePassParser {
           "Got abnormal response {:?} from {} while parsing line {}!",
           lr, bt, parser.total_lines
         ),
-        ParserResponse::BeginningWithoutSolver => warn!(
-          "Found block beginning in line {} before detecting the solver!",
-          parser.total_lines
-        ),
+        ParserResponse::BeginningWithoutSolver => {
+          return Err(ParserCrash::NoSupportedSolverDetected(
+            parser.total_lines,
+          ))
+        }
         _ => {}
       }
       buf.clear();
@@ -381,7 +418,7 @@ impl OnePassParser {
   }
 
   /// Utility method -- reads and parses a file.
-  pub fn parse_file<S: AsRef<Path>>(p: S) -> io::Result<F06File> {
+  pub fn parse_file<S: AsRef<Path>>(p: S) -> Result<F06File, ParserCrash> {
     let file = File::open(p.as_ref())?;
     let mut f06 = Self::parse_bufread(BufReader::new(file))?;
     f06.filename = p

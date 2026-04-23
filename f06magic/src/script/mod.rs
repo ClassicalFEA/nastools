@@ -35,7 +35,7 @@ pub(crate) struct Script {
 
 impl Script {
   /// Prepares a script for running: parses F06s and resolves names.
-  pub(crate) fn prepare(self) -> IoResult<ReadyScript> {
+  pub(crate) fn prepare(self) -> Result<ReadyScript, ParserCrash> {
     let mut files: BTreeMap<String, F06File> = BTreeMap::new();
     for (n, p) in self.files {
       let read = OnePassParser::parse_file(&p)?;
