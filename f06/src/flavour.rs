@@ -15,6 +15,8 @@ pub enum Solver {
   Mystran,
   /// The Simcenter Nastran solver, formerly known as NX Nastran.
   Simcenter,
+  /// The MSC Nastran solver, developed by Hexagon.
+  Msc,
 }
 
 impl Display for Solver {
@@ -26,7 +28,7 @@ impl Display for Solver {
 impl Solver {
   /// Returns all known solvers.
   pub const fn all() -> &'static [Self] {
-    return &[Self::Mystran, Self::Simcenter];
+    return &[Self::Mystran, Self::Simcenter, Self::Msc];
   }
 
   /// Returns a constant display name for the solver.
@@ -34,6 +36,7 @@ impl Solver {
     return match self {
       Solver::Mystran => "MYSTRAN",
       Solver::Simcenter => "Simcenter Nastran",
+      Solver::Msc => "MSC Nastran",
     };
   }
 
@@ -42,6 +45,7 @@ impl Solver {
     return match self {
       Solver::Mystran => &["-------------", "------------"],
       Solver::Simcenter => &["SIMCENTER NASTRAN"],
+      Solver::Msc => &["MSC Nastran"],
     };
   }
 
@@ -50,6 +54,7 @@ impl Solver {
     return match self {
       Solver::Mystran => &[BlockType::GridPointForceBalance],
       Solver::Simcenter => &[],
+      Solver::Msc => &[],
     };
   }
 }

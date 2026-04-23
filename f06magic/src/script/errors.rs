@@ -23,7 +23,7 @@ impl Display for ComparisonRunError {
     if let Self::AnotherError(e) = self {
       return e.fmt(f);
     } else {
-      return write!(f, "{:?}", self);
+      return write!(f, "{self:?}");
     }
   }
 }

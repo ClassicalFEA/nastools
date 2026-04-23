@@ -249,7 +249,8 @@ gen_block_types!(
     Some(ElementType::Tria3),
     [
       "FORCES IN TRIANGULAR ELEMENTS (CTRIA3)",
-      "ELEMENT ENGINEERING FORCES FOR ELEMENT TYPE TRIA3"
+      "ELEMENT ENGINEERING FORCES FOR ELEMENT TYPE TRIA3",
+      "FORCES IN TRIANGULAR ELEMENTS (TRIA3)"
     ]
   },
   // tria stresses
@@ -262,8 +263,9 @@ gen_block_types!(
       "STRESSES IN TRIANGULAR ELEMENTS (CTRIA3)",
       concat!(
         "ELEMENT STRESSES IN LOCAL ELEMENT COORDINATE SYSTEM ",
-        "FOR ELEMENT TYPE TRIA3"
-      )
+        "FOR ELEMENT TYPE TRIA3",
+      ),
+      "STRESSES IN TRIANGULAR ELEMENTS (TRIA3)"
     ]
   },
   // tria strains

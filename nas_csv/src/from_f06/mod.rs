@@ -51,16 +51,16 @@ impl Display for ConversionError {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     return match self {
       Self::WrongBlockType { got, expected } => {
-        write!(f, "wrong block type (got {}, expected {})", got, expected)
+        write!(f, "wrong block type (got {got}, expected {expected})")
       }
       Self::MissingDatum { row, col } => {
-        write!(f, "missing datum at ({}, {})", row, col)
+        write!(f, "missing datum at ({row}, {col})")
       }
       Self::BadRowIndexType(ni) => {
-        write!(f, "row index {} is of wrong/unexpected type", ni)
+        write!(f, "row index {ni} is of wrong/unexpected type")
       }
       Self::BadColIndexType(ni) => {
-        write!(f, "col index {} is of wrong/unexpected type", ni)
+        write!(f, "col index {ni} is of wrong/unexpected type")
       }
     };
   }

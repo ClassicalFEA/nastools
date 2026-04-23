@@ -6,7 +6,6 @@ pub(crate) mod errors;
 pub(crate) mod extraction;
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::Result as IoResult;
 
 use f06::prelude::*;
 use serde::{Deserialize, Serialize};

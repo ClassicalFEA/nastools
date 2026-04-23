@@ -89,19 +89,18 @@ impl Display for RunError {
         write!(f, "missing solver binary at {}", p.display())
       }
       RunError::SolverFailed(s, Some(c)) => {
-        write!(f, "solver \"{}\" finished with non-zero exit code {}", s, c)
+        write!(f, "solver \"{s}\" finished with non-zero exit code {c}")
       }
       RunError::SolverFailed(s, None) => write!(
         f,
-        "solver \"{}\" failed to run and didn't even return a code",
-        s,
+        "solver \"{s}\" failed to run and didn't even return a code",
       ),
       RunError::PathError => write!(f, "path processing error"),
       RunError::ExtensionMixup => write!(f, "both .f06 and .F06 exist"),
-      RunError::ParserCrash(pc) => write!(f, "Parser failed: {}", pc),
-      RunError::IoError(ioe) => write!(f, "I/O error: {}", ioe),
-      RunError::TempdirCreationFailed => write!(f, "tempdir creation failed"),
-      RunError::SubprocessFailed(e) => write!(f, "subprocess error: {}", e),
+      RunError::ParserCrash(pc) => write!(f, "Parser failed: {pc}"),
+      RunError::IoError(ioe) => write!(f, "I/O error: {ioe}"),
+      RunError::TempdirCreationFailed => write!(f, "temioepdeation failed"),
+      RunError::SubprocessFailed(e) => write!(f, "subprocess error: {e}"),
     };
   }
 }

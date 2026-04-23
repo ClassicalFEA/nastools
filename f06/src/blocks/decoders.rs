@@ -217,7 +217,7 @@ impl BlockDecoder for GridPointForceBalanceDecoder {
           return LineResponse::Useless;
         }
       }
-      Some(Solver::Simcenter) => {
+      Some(Solver::Simcenter | Solver::Msc) => {
         let i0 = nth_integer(line, 0).map(|x| x as usize);
         let i1 = nth_integer(line, 1).map(|x| x as usize);
         self.gpref = match (i0, i1) {
@@ -475,7 +475,7 @@ impl BlockDecoder for QuadStressesDecoder {
           });
         }
       }
-      Some(Solver::Simcenter) => {
+      Some(Solver::Simcenter | Solver::Msc) => {
         if ints.is_empty() {
           // cont. line
           if let Some(ref mut ri) = self.cur_row {
@@ -628,7 +628,7 @@ impl BlockDecoder for QuadForcesDecoder {
           self.cur_row = None;
         }
       }
-      Some(Solver::Simcenter) => {
+      Some(Solver::Simcenter | Solver::Msc) => {
         // line has row info
         let eid: usize;
         let point: ElementPoint;
@@ -959,8 +959,8 @@ impl BlockDecoder for TriaStressesDecoder {
     self.eid = match (self.flavour.solver, self.eid) {
       (Some(Solver::Mystran), None) => i0,
       (Some(Solver::Mystran), Some(_)) => i0.or(self.eid),
-      (Some(Solver::Simcenter), None) => i1,
-      (Some(Solver::Simcenter), Some(_)) => i1.or(self.eid),
+      (Some(Solver::Simcenter | Solver::Msc), None) => i1,
+      (Some(Solver::Simcenter | Solver::Msc), Some(_)) => i1.or(self.eid),
       (None, _) => return LineResponse::BadFlavour,
     };
     let esp = if let Some(eid) = self.eid {
@@ -1159,7 +1159,7 @@ impl BlockDecoder for BarStressesDecoder {
       // eid line
       let eid = match self.flavour.solver {
         Some(Solver::Mystran) => ui0,
-        Some(Solver::Simcenter) => match i1 {
+        Some(Solver::Simcenter | Solver::Msc) => match i1 {
           Some(ui1) => ui1,
           None => {
             warn!("missing uid on data line {line}");

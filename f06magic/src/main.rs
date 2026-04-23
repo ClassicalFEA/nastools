@@ -30,7 +30,7 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
     } else {
       "FAILED"
     };
-    println!("==> {}: {}", comp, pass);
+    println!("==> {comp}: {pass}");
     println!("  => checked: {}", res.checked.len());
     println!("  => flagged: {}", res.flagged.len());
   }
@@ -43,7 +43,7 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
 fn main() {
   if let Some(p) = std::env::args().nth(1) {
     if let Err(e) = run_script(p) {
-      eprintln!("{}", e);
+      eprintln!("{e}");
     }
   } else {
     eprintln!("No script supplied!");

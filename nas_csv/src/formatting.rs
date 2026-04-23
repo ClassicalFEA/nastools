@@ -43,19 +43,19 @@ impl FloatFormat {
   pub fn fmt_f64<W: Write>(&self, f: &mut W, x: f64) -> std::fmt::Result {
     if self.no_scientific {
       return match (self.dec_places, self.no_superfluous_plus) {
-        (None, true) => write!(f, "{}", x),
-        (None, false) => write!(f, "{:+}", x),
-        (Some(d), true) => write!(f, "{:.prec$}", x, prec = d),
-        (Some(d), false) => write!(f, "{:+.prec$}", x, prec = d),
+        (None, true) => write!(f, "{x}"),
+        (None, false) => write!(f, "{x:+}"),
+        (Some(d), true) => write!(f, "{x:.d$}"),
+        (Some(d), false) => write!(f, "{x:+.d$}"),
       };
     } else if let Some(d) = self.dec_places {
       return fmt_f64(f, x, 0, d, 2, !self.small_e, self.no_superfluous_plus);
     } else {
       return match (self.no_superfluous_plus, self.small_e) {
-        (true, true) => write!(f, "{:e}", x),
-        (true, false) => write!(f, "{:E}", x),
-        (false, true) => write!(f, "{:+e}", x),
-        (false, false) => write!(f, "{:+E}", x),
+        (true, true) => write!(f, "{x:e}"),
+        (true, false) => write!(f, "{x:E}"),
+        (false, true) => write!(f, "{x:+e}"),
+        (false, false) => write!(f, "{x:+E}"),
       };
     }
   }
@@ -144,7 +144,7 @@ impl CsvFormatting {
     return match fld {
       CsvField::Blank => write!(f, "{}", self.blanks.fmt_str()),
       CsvField::Real(x) => self.reals.fmt_f64(f, *x),
-      _ => write!(f, "{}", fld),
+      _ => write!(f, "{fld}"),
     };
   }
 

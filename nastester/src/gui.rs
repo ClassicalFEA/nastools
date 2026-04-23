@@ -630,13 +630,13 @@ impl Gui {
         }
         // dump app state
         if ui.button("Dump app state").clicked() {
-          info!("User-requested dump of app state:\n{:#?}", self);
+          info!("User-requested dump of app state:\n{self:#?}");
         }
         // toggle gui debug
         #[cfg(debug_assertions)]
         {
           let guidebug = if ctx.debug_on_hover() { "ON" } else { "OFF" };
-          if ui.button(format!("GUI debug {}", guidebug)).clicked() {
+          if ui.button(format!("GUI debug {guidebug}")).clicked() {
             ctx.set_debug_on_hover(!ctx.debug_on_hover());
           }
         }
@@ -753,7 +753,7 @@ impl Gui {
                   RunState::Finished(_) => {
                     ("Finished".to_owned(), Color32::DARK_GREEN)
                   }
-                  RunState::Error(e) => (format!("Error: {}", e), Color32::RED),
+                  RunState::Error(e) => (format!("Error: {e}"), Color32::RED),
                 };
                 ui.add(egui::Label::new(WidgetText::from(text).color(color)));
               };
@@ -1614,7 +1614,7 @@ impl Gui {
       } else {
         // show metrics
         for (exno, exr) in res.extractions.iter().enumerate() {
-          ui.strong(format!("==> For extraction #{}:", exno));
+          ui.strong(format!("==> For extraction #{exno}:"));
           ScrollArea::vertical().show(ui, |ui| {
             exn_metrics(ui, exr);
           });
