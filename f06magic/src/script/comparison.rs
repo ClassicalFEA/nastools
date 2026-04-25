@@ -1,10 +1,13 @@
 //! This simple submodule implements cross-F06 comparison.
 
+use std::collections::BTreeSet;
+
+use f06::prelude::DatumIndex;
 use serde::{Deserialize, Serialize};
 
 use crate::utils::OneOrMany;
 
-/// A comparison takes two or more F06 files
+/// A comparison takes two or more F06 files, extractions, and a criteria set.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub(crate) struct Comparison {
   /// The name of this comparison.
@@ -22,4 +25,12 @@ pub(crate) struct Comparison {
   /// Output a report to a file.
   #[serde(default)]
   pub(crate) report: Option<String>,
+}
+
+/// The results from a run.
+pub(crate) struct ComparisonResult {
+  /// Indices checked.
+  pub(crate) checked: BTreeSet<DatumIndex>,
+  /// Indices flagged.
+  pub(crate) flagged: BTreeSet<DatumIndex>,
 }

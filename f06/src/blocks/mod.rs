@@ -244,8 +244,8 @@ where
       block_type,
       line_range,
       subcase,
-      row_indices: row_indices,
-      col_indices: col_indices,
+      row_indices,
+      col_indices,
       data,
     };
   }

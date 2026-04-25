@@ -1,0 +1,4031 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.17s
+     Running `target/debug/f06magic examples/f06magic/simple.toml`
+[f06magic/src/script/mod.rs:170:9] &ex = Extraction {
+    subcases: All,
+    block_types: List(
+        [
+            Displacements,
+        ],
+    ),
+    grid_points: All,
+    elements: All,
+    rows: All,
+    cols: List(
+        [
+            Dof(
+                Dof {
+                    dof_type: Translational,
+                    axis: X,
+                },
+            ),
+            Dof(
+                Dof {
+                    dof_type: Translational,
+                    axis: Y,
+                },
+            ),
+            Dof(
+                Dof {
+                    dof_type: Translational,
+                    axis: Z,
+                },
+            ),
+        ],
+    ),
+    raw_rows: All,
+    raw_cols: All,
+    dxn: AssumeZeroes,
+}
+[f06magic/src/script/mod.rs:171:9] ex.lookup(f06).collect::<Vec<_>>() = [
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1011,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1011,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1011,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1012,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1012,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1012,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1013,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1013,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1013,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1021,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1021,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1021,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1022,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1022,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1022,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1023,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1023,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1023,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1031,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1031,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1031,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1032,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1032,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1032,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1033,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1033,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1033,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1041,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1041,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1041,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1042,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1042,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1042,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1043,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1043,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1043,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1051,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1051,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 91,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1051,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1011,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1011,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1011,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1012,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1012,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1012,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1013,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1013,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1013,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1021,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1021,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1021,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1022,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1022,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1022,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1023,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1023,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1023,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1031,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1031,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1031,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1032,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1032,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1032,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1033,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1033,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1033,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1041,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1041,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1041,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1042,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1042,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1042,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1043,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1043,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1043,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1051,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: X,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1051,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Y,
+            },
+        ),
+    },
+    DatumIndex {
+        block_ref: BlockRef {
+            subcase: 92,
+            block_type: Displacements,
+        },
+        row: GridPointRef(
+            GridPointRef {
+                gid: 1051,
+            },
+        ),
+        col: Dof(
+            Dof {
+                dof_type: Translational,
+                axis: Z,
+            },
+        ),
+    },
+]
+[f06magic/src/main.rs:48:5] res = CheckResult {
+    per_pair: {
+        (
+            "mystran_all_elem",
+            "translations on 1011,1012,1013",
+        ): PartialCheckResult {
+            checked: {
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+            },
+            flagged: {
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 91,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1011,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1012,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1013,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1021,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1022,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1023,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1031,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1032,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1033,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1041,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1042,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1043,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: X,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Y,
+                        },
+                    ),
+                },
+                DatumIndex {
+                    block_ref: BlockRef {
+                        subcase: 92,
+                        block_type: Displacements,
+                    },
+                    row: GridPointRef(
+                        GridPointRef {
+                            gid: 1051,
+                        },
+                    ),
+                    col: Dof(
+                        Dof {
+                            dof_type: Translational,
+                            axis: Z,
+                        },
+                    ),
+                },
+            },
+        },
+    },
+}

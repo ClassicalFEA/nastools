@@ -11,19 +11,18 @@ block = "displacements"
 dofs = ["tx", "ty", "tz"]
 
 [[extraction]]
+name = "translations on 1011,1012,1013"
+block = "displacements"
+nodes = [1011, 1012, 1013]
+dofs = ["tx", "ty", "tz"]
+
+[[extraction]]
 name = "1d elem stresses"
-blocks = [
-  "Elas1Stresses",
-  "rod_stresses",
-  "bar_stresses"
-]
+blocks = ["Elas1Stresses", "rod_stresses", "bar_stresses"]
 
 [[extraction]]
 name = "2d elem stresses"
-blocks = [
-  "tria_stresses",
-  "quad_stresses"
-]
+blocks = ["tria_stresses", "quad_stresses"]
 
 [[criteria]]
 name = "must be equal"
@@ -44,8 +43,11 @@ criteria = "must be equal"
 name = "sb-all-elem, 1d/2d stresses within 10%"
 reference_f06 = "scnastran_all_elem"
 test_f06 = "mystran_all_elem"
-extractions = [
-  "1d elem stresses",
-  "2d elem stresses"
-]
+extractions = ["1d elem stresses", "2d elem stresses"]
 criteria = "within 10%"
+
+[[check]]
+name = "no translation on 1011, 1012, 1013"
+file = "mystran_all_elem"
+extraction = "translations on 1011,1012,1013"
+all_equal = 0

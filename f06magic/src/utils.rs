@@ -99,6 +99,19 @@ impl<T> IntoIterator for OneOrMany<T> {
   }
 }
 
+impl<'a, T> IntoIterator for &'a OneOrMany<T> {
+  type Item = &'a T;
+
+  type IntoIter = Box<dyn Iterator<Item = &'a T> + 'a>;
+
+  fn into_iter(self) -> Self::IntoIter {
+    return match self {
+      OneOrMany::One(x) => Box::new(std::iter::once(x)),
+      OneOrMany::Many(v) => Box::new(v.iter()),
+    };
+  }
+}
+
 /// None, one or many of anything.
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
 #[serde(untagged)]

@@ -34,8 +34,25 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
     println!("  => checked: {}", res.checked.len());
     println!("  => flagged: {}", res.flagged.len());
   }
+  for ck in script.checks.keys() {
+    let res = script.run_check(ck)?;
+    println!("==> {ck}:");
+    for ((f, ex), rp) in res.per_pair.iter() {
+      let pass = if rp.flagged.is_empty() {
+        "PASSED"
+      } else {
+        "FAILED"
+      };
+      let a = rp.flagged.len();
+      let b = rp.checked.len();
+      println!("  => {f}, {ex}: {pass} ({a}/{b} flagged)")
+    }
+  }
   if script.comparisons.is_empty() {
     println!("no comparisons in script");
+  }
+  if script.checks.is_empty() {
+    println!("no checks in script");
   }
   return Ok(());
 }

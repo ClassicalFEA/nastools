@@ -1,5 +1,6 @@
 //! This module implements the data structures included in scripts.
 
+pub(crate) mod check;
 pub(crate) mod comparison;
 pub(crate) mod criteria;
 pub(crate) mod errors;
@@ -10,9 +11,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use f06::prelude::*;
 use serde::{Deserialize, Serialize};
 
-use crate::script::comparison::Comparison;
+use crate::script::check::{Check, CheckResult};
+use crate::script::comparison::{Comparison, ComparisonResult};
 use crate::script::criteria::SimpleCriteria;
-use crate::script::errors::ComparisonRunError;
+use crate::script::errors::{CheckRunError, ComparisonRunError};
 use crate::script::extraction::SimpleExtraction;
 
 /// An f06magic script. Contains decks, extractions, criteria, and tests.
@@ -30,6 +32,9 @@ pub(crate) struct Script {
   /// The comparisons within this script.
   #[serde(alias = "comparison")]
   pub(crate) comparisons: Vec<Comparison>,
+  /// The checks within this script.
+  #[serde(alias = "check")]
+  pub(crate) checks: Vec<Check>,
 }
 
 impl Script {
@@ -57,6 +62,11 @@ impl Script {
         .into_iter()
         .map(|c| (c.name.clone(), c))
         .collect(),
+      checks: self
+        .checks
+        .into_iter()
+        .map(|c| (c.name.clone(), c))
+        .collect(),
     });
   }
 }
@@ -72,14 +82,8 @@ pub(crate) struct ReadyScript {
   pub(crate) criteria: BTreeMap<String, SimpleCriteria>,
   /// The comparisons within this script.
   pub(crate) comparisons: BTreeMap<String, Comparison>,
-}
-
-/// The results from a run.
-pub(crate) struct ComparisonResult {
-  /// Indices checked.
-  pub(crate) checked: BTreeSet<DatumIndex>,
-  /// Indices flagged.
-  pub(crate) flagged: BTreeSet<DatumIndex>,
+  /// The checks within this script.
+  pub(crate) checks: BTreeMap<String, Check>,
 }
 
 impl ReadyScript {
@@ -136,5 +140,40 @@ impl ReadyScript {
       checked: indices,
       flagged,
     });
+  }
+
+  /// Runs a single check.
+  pub(crate) fn run_check(
+    &self,
+    name: &str,
+  ) -> Result<CheckResult, CheckRunError> {
+    let mut results = CheckResult::default();
+    let check = self
+      .checks
+      .get(name)
+      .ok_or(CheckRunError::CheckNotFound(name.to_string()))?;
+    // get the files and extractions
+    let f06_names = &check.files;
+    let extractions_names = &check.extractions;
+    for f06_name in f06_names.into_iter() {
+      for en in extractions_names.into_iter() {
+        let f06 = self
+          .files
+          .get(f06_name)
+          .ok_or(CheckRunError::FileNotFound(f06_name.to_string()))?;
+        let ex: Extraction = self
+          .extractions
+          .get(en)
+          .ok_or(CheckRunError::ExtractionNotFound(en.clone()))?
+          .clone()
+          .into();
+        let nums = ex.lookup(f06).map(|di| (di, di.get_from(f06).unwrap()));
+        let pres = check.run_for(nums);
+        results
+          .per_pair
+          .insert((f06_name.to_owned(), en.to_owned()), pres);
+      }
+    }
+    return Ok(results);
   }
 }

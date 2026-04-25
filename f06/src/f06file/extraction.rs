@@ -317,8 +317,8 @@ impl Extraction {
           .col_indices
           .keys()
           .filter(|ci| self.cols.filter_fn(ci))
-          .filter(|ci| self.grid_points.lax_filter(&ci.grid_point_id()))
-          .filter(|ci| self.elements.lax_filter(&ci.element_id()))
+          //.filter(|ci| self.grid_points.lax_filter(&ci.grid_point_id()))
+          //.filter(|ci| self.elements.lax_filter(&ci.element_id()))
           .filter(|ci| self.raw_cols.filter_fn(b.col_indices.get(ci).unwrap()));
         return rows.cartesian_product(cols).map(|(ri, ci)| DatumIndex {
           block_ref: BlockRef {
@@ -352,8 +352,8 @@ impl Extraction {
         .col_indices
         .keys()
         .filter(|ci| self.cols.filter_fn(ci))
-        .filter(|ci| self.grid_points.lax_filter(&ci.grid_point_id()))
-        .filter(|ci| self.elements.lax_filter(&ci.element_id()))
+        //.filter(|ci| self.grid_points.lax_filter(&ci.grid_point_id()))
+        //.filter(|ci| self.elements.lax_filter(&ci.element_id()))
         .filter(|ci| {
           self.raw_cols.filter_fn(clone.col_indices.get(ci).unwrap())
         })
