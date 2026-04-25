@@ -104,8 +104,8 @@ fn main() -> Result<(), ParserCrash> {
           INDENT,
           INDENT,
           block.block_type,
-          block.row_indexes.len(),
-          block.col_indexes.len()
+          block.row_indices.len(),
+          block.col_indices.len()
         );
       }
     }

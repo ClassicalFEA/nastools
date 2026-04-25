@@ -63,13 +63,13 @@ impl From<(&FinalBlock, &FinalBlock)> for BlockCompatibility {
     if a.subcase != b.subcase {
       return IncompatibilityReason::DifferentSubcase.into();
     }
-    let aci = a.col_indexes.keys().copied().collect::<BTreeSet<_>>();
-    let bci = b.col_indexes.keys().copied().collect::<BTreeSet<_>>();
+    let aci = a.col_indices.keys().copied().collect::<BTreeSet<_>>();
+    let bci = b.col_indices.keys().copied().collect::<BTreeSet<_>>();
     if aci != bci {
       return IncompatibilityReason::DifferentColumns.into();
     }
-    let ari = a.row_indexes.keys().copied().collect::<BTreeSet<_>>();
-    let bri = b.row_indexes.keys().copied().collect::<BTreeSet<_>>();
+    let ari = a.row_indices.keys().copied().collect::<BTreeSet<_>>();
+    let bri = b.row_indices.keys().copied().collect::<BTreeSet<_>>();
     let ixn = &ari & &bri;
     let dxn = &ari ^ &bri;
     if ixn.is_empty() {
@@ -325,7 +325,7 @@ impl DataDiffer {
                r: &NasIndex,
                c: &NasIndex|
      -> Result<Option<f64>, FlagReason> {
-      if s.row_indexes.contains_key(r) {
+      if s.row_indices.contains_key(r) {
         return Ok(Some(s.get(*r, *c).unwrap().into()));
       } else {
         match self.dxn_behaviour {
@@ -335,17 +335,17 @@ impl DataDiffer {
         }
       }
     };
-    let row_indexes = a
-      .row_indexes
+    let row_indices = a
+      .row_indices
       .keys()
-      .chain(b.row_indexes.keys())
+      .chain(b.row_indices.keys())
       .copied()
       .collect::<BTreeSet<_>>();
-    let col_indexes = a.col_indexes.keys().copied();
+    let col_indices = a.col_indices.keys().copied();
     return Ok(
-      row_indexes
+      row_indices
         .into_iter()
-        .cartesian_product(col_indexes)
+        .cartesian_product(col_indices)
         .filter_map(move |(r, c)| {
           let mut fv = FoundValues {
             row: r,

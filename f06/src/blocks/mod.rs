@@ -134,9 +134,9 @@ pub(crate) struct RowBlock<
   const W: usize,
 > {
   /// The row indexes.
-  row_indexes: BTreeMap<R, usize>,
+  row_indices: BTreeMap<R, usize>,
   /// The column indexes.
-  col_indexes: BTreeMap<C, usize>,
+  col_indices: BTreeMap<C, usize>,
   /// The data within.
   data: Option<DynMatx<S, W>>,
 }
@@ -148,11 +148,11 @@ where
   C: IndexType,
 {
   /// Creates a new RowBlock with a set width and a pre-allocated size.
-  pub(crate) fn new(col_indexes: BTreeMap<C, usize>) -> Self {
-    let row_indexes: BTreeMap<R, usize> = BTreeMap::new();
+  pub(crate) fn new(col_indices: BTreeMap<C, usize>) -> Self {
+    let row_indices: BTreeMap<R, usize> = BTreeMap::new();
     return Self {
-      row_indexes,
-      col_indexes,
+      row_indices,
+      col_indices,
       data: None,
     };
   }
@@ -160,12 +160,12 @@ where
   /// Inserts a line raw into the data matrix, without fixing indexes. Returns
   /// the row within the underlying matrixes this was put in.
   pub(crate) fn insert_raw(&mut self, row_index: R, row: &[S; W]) -> usize {
-    if self.row_indexes.contains_key(&row_index) {
+    if self.row_indices.contains_key(&row_index) {
       warn!("tried to insert the same line twice! index: {row_index:?}");
     }
     let irow: usize;
     if let Some(mut mat) = self.data.take() {
-      if let Some(fnd) = self.row_indexes.get(&row_index) {
+      if let Some(fnd) = self.row_indices.get(&row_index) {
         irow = *fnd;
       } else {
         irow = mat.nrows();
@@ -178,20 +178,20 @@ where
       let mat = DynMatx::<S, W>::from_row_slice(row);
       self.data = Some(mat);
     }
-    self.row_indexes.insert(row_index, irow);
+    self.row_indices.insert(row_index, irow);
     return irow;
   }
 
   /// Returns the column indexes as known by the RowBlock. This way, you can
   /// set up your slices adequately and pass them directly into insert_row_raw,
   /// which is much, much faster.
-  pub(crate) fn col_indexes(&self) -> &BTreeMap<C, usize> {
-    return &self.col_indexes;
+  pub(crate) fn col_indices(&self) -> &BTreeMap<C, usize> {
+    return &self.col_indices;
   }
 
   /// Returns the row indexes.
-  pub(crate) fn row_indexes(&self) -> &BTreeMap<R, usize> {
-    return &self.row_indexes;
+  pub(crate) fn row_indices(&self) -> &BTreeMap<R, usize> {
+    return &self.row_indices;
   }
 
   /// Inserts a line into the data matrix, but passing column indexes because
@@ -203,7 +203,7 @@ where
   ) -> usize {
     let mut raw_data = [S::zero(); W];
     data.iter().for_each(|(c, s)| {
-      let ri = self.col_indexes.get(c).expect("bad col index");
+      let ri = self.col_indices.get(c).expect("bad col index");
       raw_data[*ri] = *s;
     });
     return self.insert_raw(row_index, &raw_data);
@@ -225,13 +225,13 @@ where
     subcase: usize,
     line_range: Option<(usize, usize)>,
   ) -> FinalBlock {
-    let row_indexes: BTreeMap<NasIndex, usize> = self
-      .row_indexes
+    let row_indices: BTreeMap<NasIndex, usize> = self
+      .row_indices
       .into_iter()
       .map(|(k, v)| (k.into(), v))
       .collect();
-    let col_indexes: BTreeMap<NasIndex, usize> = self
-      .col_indexes
+    let col_indices: BTreeMap<NasIndex, usize> = self
+      .col_indices
       .into_iter()
       .map(|(k, v)| (k.into(), v))
       .collect();
@@ -244,8 +244,8 @@ where
       block_type,
       line_range,
       subcase,
-      row_indexes,
-      col_indexes,
+      row_indices: row_indices,
+      col_indices: col_indices,
       data,
     };
   }
@@ -299,9 +299,9 @@ pub struct FinalBlock {
   /// The subcase where this block appears.
   pub subcase: usize,
   /// The row indexes.
-  pub row_indexes: BTreeMap<NasIndex, usize>,
+  pub row_indices: BTreeMap<NasIndex, usize>,
   /// The column indexes.
-  pub col_indexes: BTreeMap<NasIndex, usize>,
+  pub col_indices: BTreeMap<NasIndex, usize>,
   /// The data within.
   pub data: Option<FinalDMat>,
 }
@@ -313,8 +313,8 @@ impl FinalBlock {
     row: R,
     col: C,
   ) -> Option<F06Number> {
-    let ri = self.row_indexes.get(&row.into())?;
-    let ci = self.col_indexes.get(&col.into())?;
+    let ri = self.row_indices.get(&row.into())?;
+    let ci = self.col_indices.get(&col.into())?;
     return Some(match self.data {
       Some(FinalDMat::Reals(ref m)) => F06Number::Real(*m.get((*ri, *ci))?),
       Some(FinalDMat::Integers(ref m)) => {
@@ -337,13 +337,13 @@ impl FinalBlock {
 
   /// Swaps two columns and updates the column indexes array.
   pub fn swap_columns(&mut self, a: NasIndex, b: NasIndex) {
-    let aio = self.col_indexes.get(&a).copied();
-    let bio = self.col_indexes.get(&b).copied();
+    let aio = self.col_indices.get(&a).copied();
+    let bio = self.col_indices.get(&b).copied();
     match (&mut self.data, aio, bio) {
       (Some(ref mut fdm), Some(ai), Some(bi)) => {
         fdm.swap_columns(ai, bi);
-        self.col_indexes.insert(a, bi);
-        self.col_indexes.insert(b, ai);
+        self.col_indices.insert(a, bi);
+        self.col_indices.insert(b, ai);
       }
       _ => return,
     };
@@ -351,13 +351,13 @@ impl FinalBlock {
 
   /// Swaps two rows and updates the row indexes array.
   pub fn swap_rows(&mut self, a: NasIndex, b: NasIndex) {
-    let aio = self.row_indexes.get(&a).copied();
-    let bio = self.row_indexes.get(&b).copied();
+    let aio = self.row_indices.get(&a).copied();
+    let bio = self.row_indices.get(&b).copied();
     match (&mut self.data, aio, bio) {
       (Some(ref mut fdm), Some(ai), Some(bi)) => {
         fdm.swap_rows(ai, bi);
-        self.row_indexes.insert(a, bi);
-        self.row_indexes.insert(b, ai);
+        self.row_indices.insert(a, bi);
+        self.row_indices.insert(b, ai);
       }
       _ => return,
     };
@@ -367,12 +367,12 @@ impl FinalBlock {
   /// accordingly) so that the real row indexes grow monotonically with the
   /// high-level indexes.
   pub fn sort_columns(&mut self) {
-    let nixes: Vec<NasIndex> = self.col_indexes.keys().copied().collect();
-    let mut ns: Vec<usize> = self.col_indexes.values().copied().collect();
+    let nixes: Vec<NasIndex> = self.col_indices.keys().copied().collect();
+    let mut ns: Vec<usize> = self.col_indices.values().copied().collect();
     ns.sort();
     for (nix, i) in nixes.into_iter().zip(ns.into_iter()) {
       let nswap = self
-        .col_indexes
+        .col_indices
         .iter()
         .find(|p| p.1 == &i)
         .map(|p| *(p.0))
@@ -385,12 +385,12 @@ impl FinalBlock {
   /// accordingly) so that the real row indexes grow monotonically with the
   /// high-level indexes.
   pub fn sort_rows(&mut self) {
-    let nixes: Vec<NasIndex> = self.row_indexes.keys().copied().collect();
-    let mut ns: Vec<usize> = self.row_indexes.values().copied().collect();
+    let nixes: Vec<NasIndex> = self.row_indices.keys().copied().collect();
+    let mut ns: Vec<usize> = self.row_indices.values().copied().collect();
     ns.sort();
     for (nix, i) in nixes.into_iter().zip(ns.into_iter()) {
       let nswap = self
-        .row_indexes
+        .row_indices
         .iter()
         .find(|p| p.1 == &i)
         .map(|p| *(p.0))
@@ -411,9 +411,9 @@ impl FinalBlock {
     }
     // check for same columns
     let primary_col_set: BTreeSet<NasIndex> =
-      self.col_indexes.keys().copied().collect();
+      self.col_indices.keys().copied().collect();
     let secondary_col_set: BTreeSet<NasIndex> =
-      other.col_indexes.keys().copied().collect();
+      other.col_indices.keys().copied().collect();
     let missing_in_primary = &secondary_col_set - &primary_col_set;
     let missing_in_secondary = &primary_col_set - &secondary_col_set;
     if !missing_in_primary.is_empty() || !missing_in_secondary.is_empty() {
@@ -433,9 +433,9 @@ impl FinalBlock {
   /// Returns the row indexes this has in common with another.
   pub fn row_conflicts(&self, other: &Self) -> BTreeSet<NasIndex> {
     let primary_row_set: BTreeSet<&NasIndex> =
-      self.row_indexes.keys().collect();
+      self.row_indices.keys().collect();
     let secondary_row_set: BTreeSet<&NasIndex> =
-      other.row_indexes.keys().collect();
+      other.row_indices.keys().collect();
     return primary_row_set
       .intersection(&secondary_row_set)
       .copied()
@@ -484,32 +484,32 @@ impl FinalBlock {
         // both nonempty. copy data from primary to secondary.
         // check for which indexes we're gonna copy
         let primary_row_set: BTreeSet<NasIndex> =
-          self.row_indexes.keys().copied().collect();
+          self.row_indices.keys().copied().collect();
         let secondary_row_set: BTreeSet<NasIndex> =
-          other.row_indexes.keys().copied().collect();
+          other.row_indices.keys().copied().collect();
         let copied = &secondary_row_set - &primary_row_set;
         let skipped = &secondary_row_set - &copied;
         let to_copy =
-          copied.iter().map(|ci| other.row_indexes.get(ci).unwrap());
+          copied.iter().map(|ci| other.row_indices.get(ci).unwrap());
         // copy data
         let (ndp, nds) = match (dp, ds) {
           (FinalDMat::Reals(mut p), FinalDMat::Reals(s)) => {
             for (si, ci) in to_copy.zip(copied.iter()) {
-              self.row_indexes.insert(*ci, p.nrows());
+              self.row_indices.insert(*ci, p.nrows());
               p = row_copy(p, &s, *si)
             }
             (FinalDMat::Reals(p), FinalDMat::Reals(s))
           }
           (FinalDMat::Integers(mut p), FinalDMat::Integers(s)) => {
             for (si, ci) in to_copy.zip(copied.iter()) {
-              self.row_indexes.insert(*ci, p.nrows());
+              self.row_indices.insert(*ci, p.nrows());
               p = row_copy(p, &s, *si)
             }
             (FinalDMat::Integers(p), FinalDMat::Integers(s))
           }
           (FinalDMat::Naturals(mut p), FinalDMat::Naturals(s)) => {
             for (si, ci) in to_copy.zip(copied.iter()) {
-              self.row_indexes.insert(*ci, p.nrows());
+              self.row_indices.insert(*ci, p.nrows());
               p = row_copy(p, &s, *si)
             }
             (FinalDMat::Naturals(p), FinalDMat::Naturals(s))

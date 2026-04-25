@@ -177,12 +177,12 @@ impl DatumIndex {
       .nth(0)
       .ok_or(ExtractionError::NoSuchBlock(self.block_ref))?;
     let ri_ex = block
-      .row_indexes
+      .row_indices
       .keys()
       .nth(0)
       .ok_or(ExtractionError::BlockIsEmpty)?;
     let ci_ex = block
-      .col_indexes
+      .col_indices
       .keys()
       .nth(0)
       .ok_or(ExtractionError::BlockIsEmpty)?;
@@ -198,10 +198,10 @@ impl DatumIndex {
         against: *ci_ex,
       });
     }
-    if !block.row_indexes.contains_key(&self.row) {
+    if !block.row_indices.contains_key(&self.row) {
       return Err(ExtractionError::MissingRow(self.row));
     }
-    if !block.col_indexes.contains_key(&self.col) {
+    if !block.col_indices.contains_key(&self.col) {
       return Err(ExtractionError::MissingColumn(self.col));
     }
     return Ok(
@@ -285,6 +285,8 @@ pub struct Extraction {
   pub rows: Specifier<NasIndex>,
   /// Column filter (for when you want very specific data).
   pub cols: Specifier<NasIndex>,
+  /// Raw row filter (for weird blocks like eigen).
+  pub raw_rows: Specifier<usize>,
   /// Raw column filter (for ease of separation).
   pub raw_cols: Specifier<usize>,
   /// What to do in case of disjunctions.
@@ -305,18 +307,19 @@ impl Extraction {
       .filter(|b| self.block_types.filter_fn(&b.block_type))
       .flat_map(|b| {
         let rows = b
-          .row_indexes
+          .row_indices
           .keys()
           .filter(|ri| self.rows.filter_fn(ri))
+          .filter(|ri| self.raw_rows.filter_fn(b.row_indices.get(ri).unwrap()))
           .filter(|ri| self.grid_points.lax_filter(&ri.grid_point_id()))
           .filter(|ri| self.elements.lax_filter(&ri.element_id()));
         let cols = b
-          .col_indexes
+          .col_indices
           .keys()
           .filter(|ci| self.cols.filter_fn(ci))
           .filter(|ci| self.grid_points.lax_filter(&ci.grid_point_id()))
           .filter(|ci| self.elements.lax_filter(&ci.element_id()))
-          .filter(|ci| self.raw_cols.filter_fn(b.col_indexes.get(ci).unwrap()));
+          .filter(|ci| self.raw_cols.filter_fn(b.col_indices.get(ci).unwrap()));
         return rows.cartesian_product(cols).map(|(ri, ci)| DatumIndex {
           block_ref: BlockRef {
             subcase: b.subcase,
@@ -338,7 +341,7 @@ impl Extraction {
     for block in compatible_blocks {
       let mut clone = block.clone();
       let rows: Vec<NasIndex> = clone
-        .row_indexes
+        .row_indices
         .keys()
         .filter(|ri| self.rows.filter_fn(ri))
         .filter(|ri| self.grid_points.lax_filter(&ri.grid_point_id()))
@@ -346,18 +349,18 @@ impl Extraction {
         .copied()
         .collect();
       let cols: Vec<NasIndex> = clone
-        .col_indexes
+        .col_indices
         .keys()
         .filter(|ci| self.cols.filter_fn(ci))
         .filter(|ci| self.grid_points.lax_filter(&ci.grid_point_id()))
         .filter(|ci| self.elements.lax_filter(&ci.element_id()))
         .filter(|ci| {
-          self.raw_cols.filter_fn(clone.col_indexes.get(ci).unwrap())
+          self.raw_cols.filter_fn(clone.col_indices.get(ci).unwrap())
         })
         .copied()
         .collect();
-      clone.row_indexes.retain(|ri, _| rows.contains(ri));
-      clone.col_indexes.retain(|ci, _| cols.contains(ci));
+      clone.row_indices.retain(|ri, _| rows.contains(ri));
+      clone.col_indices.retain(|ci, _| cols.contains(ci));
       subs.push(clone);
     }
     return subs;

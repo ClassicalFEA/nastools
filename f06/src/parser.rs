@@ -195,7 +195,7 @@ impl OnePassParser {
       };
 
       let fb = dec.finalise(subcase, line_range);
-      if !fb.row_indexes.is_empty() {
+      if !fb.row_indices.is_empty() {
         self.file.insert_block(fb);
       }
     }

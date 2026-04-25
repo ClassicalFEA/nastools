@@ -180,7 +180,7 @@ impl BlockConverter {
         expected: self.input_block_type,
       });
     }
-    return Ok(block.row_indexes.keys().flat_map(|row| {
+    return Ok(block.row_indices.keys().flat_map(|row| {
       self.generators.iter().enumerate().map(|(irow, gens)| {
         let headers = &self.headers[irow];
         let mut fields: [CsvField; NAS_CSV_COLS - 1] = [

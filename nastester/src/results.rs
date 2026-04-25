@@ -88,7 +88,7 @@ impl SingleColumnMetric {
     col: NasIndex,
   ) -> Option<f64> {
     let nums = block
-      .row_indexes
+      .row_indices
       .keys()
       .filter_map(|r| block.get(*r, col))
       .map(f64::from);
@@ -178,7 +178,7 @@ impl ColumnCompareMetric {
     test_block: &FinalBlock,
     col: NasIndex,
   ) -> Option<f64> {
-    let nums = ref_block.row_indexes.keys().filter_map(|r| {
+    let nums = ref_block.row_indices.keys().filter_map(|r| {
       if let Some(rval) = ref_block.get(*r, col) {
         if let Some(tval) = test_block.get(*r, col) {
           return Some((f64::from(rval), f64::from(tval)));
@@ -283,7 +283,7 @@ impl ExtractionResults {
         self
           .blocks_of(*p)
           .iter()
-          .flat_map(move |b| b.col_indexes.keys().map(move |ci| (*p, b, *ci)))
+          .flat_map(move |b| b.col_indices.keys().map(move |ci| (*p, b, *ci)))
       })
       .flat_map(|(p, b, c)| {
         SingleColumnMetric::all()
@@ -305,7 +305,7 @@ impl ExtractionResults {
     let mut new_ccm: BTreeMap<_, Option<f64>> = BTreeMap::new();
     for block_ref in brs {
       if let (Some(r), Some(t)) = self.block_pair(block_ref) {
-        for col in r.col_indexes.keys() {
+        for col in r.col_indices.keys() {
           for metric in ColumnCompareMetric::all() {
             let true_index = (block_ref, *col, *metric);
             let value = metric.compute(r, t, *col);

@@ -74,8 +74,8 @@ macro_rules! converting_decoder {
         line_range: Option<(usize, usize)>,
       ) -> FinalBlock {
         let mut fb = self.inner.unwrap(subcase, line_range);
-        fb.col_indexes = fb
-          .col_indexes
+        fb.col_indices = fb
+          .col_indices
           .into_iter()
           .map(|(ci, n)| {
             if let NasIndex::$inner_col_type(col) = ci {
@@ -86,8 +86,8 @@ macro_rules! converting_decoder {
             }
           })
           .collect();
-        fb.row_indexes = fb
-          .row_indexes
+        fb.row_indices = fb
+          .row_indices
           .into_iter()
           .map(|(ci, n)| {
             if let NasIndex::$inner_row_type(row) = ci {
@@ -1448,7 +1448,7 @@ fn eigenvector_mystran() {
   assert_eq!(dec.data.data.as_ref().unwrap().column_iter().count(), 6);
   assert_eq!(dec.data.data.as_ref().unwrap().row_iter().count(), 5);
 
-  let grid_ids: Vec<_> = dec.data.row_indexes.keys().map(|k| k.gid).collect();
+  let grid_ids: Vec<_> = dec.data.row_indices.keys().map(|k| k.gid).collect();
   assert_eq!(grid_ids, [1, 2, 3, 4, 5]);
 }
 
@@ -1480,7 +1480,7 @@ fn eigenvector_scnastran() {
 
   assert_eq!(dec.data.data.as_ref().unwrap().row_iter().count(), 13);
 
-  let mut gids = dec.data.row_indexes().keys().map(|k| k.gid);
+  let mut gids = dec.data.row_indices().keys().map(|k| k.gid);
   assert_eq!(gids.next(), Some(1011));
   assert_eq!(gids.next(), Some(1012));
   assert_eq!(gids.next(), Some(1013));
@@ -1573,7 +1573,7 @@ fn real_eigenvalues_mystran() {
   for line in MYSTRAN_BLOCK.lines() {
     BlockDecoder::consume(&mut dec, line);
   }
-  let mut row_idxs = dec.data.row_indexes().keys().copied();
+  let mut row_idxs = dec.data.row_indices().keys().copied();
 
   assert_eq!(row_idxs.next(), Some(EigenSolutionMode(1)));
   assert_eq!(row_idxs.next(), Some(EigenSolutionMode(2)));
@@ -1623,7 +1623,7 @@ fn real_eigenvalues_scnastran() {
   }
   assert!(dec
     .data
-    .row_indexes()
+    .row_indices()
     .keys()
     .copied()
     .enumerate()

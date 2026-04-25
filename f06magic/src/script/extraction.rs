@@ -39,6 +39,10 @@ pub(crate) struct SimpleExtraction {
   #[serde(default)]
   #[serde(alias = "column")]
   pub(crate) columns: AnyAmount<usize>,
+  /// Raw row indices. Use with caution.
+  #[serde(default)]
+  #[serde(alias = "row")]
+  pub(crate) rows: AnyAmount<usize>,
 }
 
 impl From<SimpleExtraction> for Extraction {
@@ -51,6 +55,7 @@ impl From<SimpleExtraction> for Extraction {
       rows: Specifier::All,
       cols: value.dof.into_iter().map(NasIndex::Dof).collect(),
       raw_cols: value.columns.into(),
+      raw_rows: value.rows.into(),
       dxn: DisjunctionBehaviour::AssumeZeroes,
     };
   }

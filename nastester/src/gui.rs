@@ -1349,7 +1349,7 @@ impl Gui {
         let mut cells = Layout::left_to_right(Align::Center);
         cells.main_wrap = false;
         let rows: BTreeMap<usize, NasIndex> = block
-          .row_indexes
+          .row_indices
           .keys()
           .filter(|ri| {
             oe.is_none() || oe.is_some_and(|k| k.iter().any(|d| &&d.row == ri))
@@ -1358,7 +1358,7 @@ impl Gui {
           .enumerate()
           .collect();
         let cols: BTreeMap<usize, NasIndex> = block
-          .col_indexes
+          .col_indices
           .keys()
           .filter(|ci| {
             oe.is_none() || oe.is_some_and(|k| k.iter().any(|d| &&d.col == ci))
@@ -1390,7 +1390,7 @@ impl Gui {
               row.col(|ui| {
                 ui.strong(row_index.to_string());
               });
-              for col_index in block.col_indexes.keys() {
+              for col_index in block.col_indices.keys() {
                 // data rows
                 row.col(|ui| {
                   let mut fbuf = String::new();
