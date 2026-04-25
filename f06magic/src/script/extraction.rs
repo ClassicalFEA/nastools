@@ -37,7 +37,7 @@ pub(crate) struct SimpleExtraction {
   pub(crate) dof: AnyAmount<Dof>,
   /// Raw column indices. Use with caution.
   #[serde(default)]
-  #[serde(alias = "column")]
+  #[serde(alias = "column", alias = "col", alias = "cols")]
   pub(crate) columns: AnyAmount<usize>,
   /// Raw row indices. Use with caution.
   #[serde(default)]

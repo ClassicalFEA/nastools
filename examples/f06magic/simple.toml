@@ -1,5 +1,6 @@
 [files]
 mystran_all_elem = "examples/mystran/SB-ALL-ELEM-TEST.F06"
+mystran_all_elem_giv = "examples/mystran/EB-ALL-ELEM-TEST-GIV.F06"
 scnastran_all_elem = "examples/scnastran/SB-ALL-ELEM-TEST_scnas_postexport.f06"
 
 [[extraction]]
@@ -23,6 +24,12 @@ blocks = ["Elas1Stresses", "rod_stresses", "bar_stresses"]
 [[extraction]]
 name = "2d elem stresses"
 blocks = ["tria_stresses", "quad_stresses"]
+
+[[extraction]]
+name = "4th eigenvalue"
+block = "eigenvalues"
+col = 0
+row = 3
 
 [[criteria]]
 name = "must be equal"
@@ -51,3 +58,9 @@ name = "no translation on 1011, 1012, 1013"
 file = "mystran_all_elem"
 extraction = "translations on 1011,1012,1013"
 all_equal = 0
+
+[[check]]
+name = "4th eigenvalue in range 2e5-3e5"
+file = "mystran_all_elem_giv"
+extraction = "4th eigenvalue"
+all_in_range = [2e5, 3e5]
