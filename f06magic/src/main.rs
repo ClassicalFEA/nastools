@@ -53,31 +53,31 @@ struct Cli {
   /// Exit codes (oneliner): 0 PASS, 1 FAIL, 2 extraction error,
   /// 3 spec parse error, 4 F06 parse error.
   ///
-  /// Exit codes (script mode): number of failed checks/comparisons
-  /// (0 means all passed), or 255 (-1) on a general failure such as a
-  /// TOML parse error or F06 parse error.
+  /// Exit codes (script mode): total number of flagged values across all
+  /// comparisons and checks (0 means all passed, capped at 254), or 255
+  /// (-1) on a general failure such as a TOML parse error or F06 parse
+  /// error.
   #[arg(long, value_name = "SPEC", conflicts_with = "indices")]
   oneliner: Option<String>,
 }
 
 /// Runs a script in a given path and outputs results.
 ///
-/// Returns the number of failed checks/comparisons on success. A "fail" is
-/// any comparison whose flagged set is non-empty, plus each per-(file,
-/// extraction) check pair whose flagged set is non-empty.
+/// Returns the total number of flagged values across all comparisons and
+/// checks (0 when everything passed).
 fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
   let contents = std::fs::read_to_string(path)?;
   let try_script: Result<Script, TomlError> = toml::from_str(&contents);
   let script = try_script?.prepare()?;
-  let mut fails: usize = 0;
+  let mut flagged_total: usize = 0;
   for comp in script.comparisons.keys() {
     let res = script.run_comparison(comp)?;
     let pass = if res.flagged.is_empty() {
       "PASSED"
     } else {
-      fails += 1;
       "FAILED"
     };
+    flagged_total += res.flagged.len();
     println!("==> {comp}: {pass}");
     println!("  => checked: {}", res.checked.len());
     println!("  => flagged: {}", res.flagged.len());
@@ -89,11 +89,11 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
       let pass = if rp.flagged.is_empty() {
         "PASSED"
       } else {
-        fails += 1;
         "FAILED"
       };
       let a = rp.flagged.len();
       let b = rp.checked.len();
+      flagged_total += a;
       println!("  => {f}, {ex}: {pass} ({a}/{b} flagged)")
     }
   }
@@ -103,7 +103,7 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
   if script.checks.is_empty() {
     println!("no checks in script");
   }
-  return Ok(fails);
+  return Ok(flagged_total);
 }
 
 /// Prints the row/column index reference for one or all block types.
@@ -171,10 +171,10 @@ fn main() -> ExitCode {
   }
   match cli.path {
     Some(p) => match run_script(p) {
-      Ok(fails) => {
-        // Exit code is the number of failures, capped at 254 so it does not
-        // collide with the general-failure code (255 / -1).
-        return ExitCode::from(fails.min(254) as u8);
+      Ok(flagged) => {
+        // Exit code is the total number of flagged values, capped at 254 so
+        // it does not collide with the general-failure code (255 / -1).
+        return ExitCode::from(flagged.min(254) as u8);
       }
       Err(e) => {
         eprintln!("{e}");
