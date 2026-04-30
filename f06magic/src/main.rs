@@ -8,24 +8,30 @@
 #![allow(clippy::needless_return)]
 #![allow(dead_code)]
 
+pub(crate) mod oneliner;
 pub(crate) mod script;
 pub(crate) mod utils;
 
 use std::error::Error;
 use std::path::Path;
+use std::process::ExitCode;
 
 use clap::Parser;
 use f06::prelude::*;
 use toml::de::Error as TomlError;
 
+use crate::oneliner::{
+  OnelinerOutcome, error_exit_code, parse_oneliner, run_oneliner,
+};
 use crate::script::Script;
 
 /// f06magic command-line interface.
 #[derive(Parser, Debug)]
 #[command(version, about)]
 struct Cli {
-  /// The script to run, if any.
-  script: Option<String>,
+  /// Path to a TOML script (default mode), or to an F06 file when
+  /// `--oneliner` is supplied.
+  path: Option<String>,
   /// List the row/column index types accepted by every block (or only the
   /// requested block type) and exit. Useful when authoring a script.
   #[arg(
@@ -35,6 +41,19 @@ struct Cli {
     default_missing_value = ""
   )]
   indices: Option<String>,
+  /// Run a single PASS/FAIL check against the F06 file at <PATH>.
+  ///
+  /// Spec format (must be quoted on the shell):
+  ///
+  ///   subcase <N> <block> <row> <col> <A> <to|delta> <B>
+  ///
+  /// `to` is an inclusive range; `delta` is `[A - B, A + B]` (B >= 0).
+  ///
+  /// Prints PASS/FAIL/ERROR on stdout and the value (or error) on stderr.
+  /// Exit codes: 0 PASS, 1 FAIL, 2 extraction error, 3 spec parse error,
+  /// 4 F06 parse error.
+  #[arg(long, value_name = "SPEC", conflicts_with = "indices")]
+  oneliner: Option<String>,
 }
 
 /// Runs a script in a given path and outputs results.
@@ -95,18 +114,61 @@ fn print_indices(filter: &str) {
   }
 }
 
-fn main() {
+fn main() -> ExitCode {
   let cli = Cli::parse();
   if let Some(filter) = cli.indices.as_deref() {
     print_indices(filter);
-    return;
+    return ExitCode::SUCCESS;
   }
-  match cli.script {
+  if let Some(spec_str) = cli.oneliner.as_deref() {
+    let path = match cli.path.as_deref() {
+      Some(p) => p,
+      None => {
+        eprintln!("--oneliner requires an F06 file path");
+        println!("ERROR");
+        return ExitCode::from(3);
+      }
+    };
+    let spec = match parse_oneliner(spec_str) {
+      Ok(s) => s,
+      Err(e) => {
+        eprintln!("{e}");
+        println!("ERROR");
+        return ExitCode::from(error_exit_code(&e) as u8);
+      }
+    };
+    return match run_oneliner(&spec, path) {
+      Ok((outcome, value)) => {
+        eprintln!("{value}");
+        match outcome {
+          OnelinerOutcome::Pass => {
+            println!("PASS");
+            ExitCode::SUCCESS
+          }
+          OnelinerOutcome::Fail => {
+            println!("FAIL");
+            ExitCode::from(1)
+          }
+        }
+      }
+      Err(e) => {
+        eprintln!("{e}");
+        println!("ERROR");
+        ExitCode::from(error_exit_code(&e) as u8)
+      }
+    };
+  }
+  match cli.path {
     Some(p) => {
       if let Err(e) = run_script(p) {
         eprintln!("{e}");
+        return ExitCode::from(1);
       }
     }
-    None => eprintln!("No script supplied!"),
+    None => {
+      eprintln!("No script supplied!");
+      return ExitCode::from(1);
+    }
   }
+  return ExitCode::SUCCESS;
 }
