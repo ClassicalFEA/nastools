@@ -9,13 +9,13 @@ name = "everything"
 [[extraction]]
 name = "nodal translations"
 block = "displacements"
-dofs = ["tx", "ty", "tz"]
+cols = ["tx", "ty", "tz"]
 
 [[extraction]]
 name = "translations on 1011,1012,1013"
 block = "displacements"
 nodes = [1011, 1012, 1013]
-dofs = ["tx", "ty", "tz"]
+cols = ["tx", "ty", "tz"]
 
 [[extraction]]
 name = "1d elem stresses"
@@ -26,10 +26,15 @@ name = "2d elem stresses"
 blocks = ["tria_stresses", "quad_stresses"]
 
 [[extraction]]
+name = "bar axial+max stresses"
+block = "bar_stresses"
+cols = ["axial", "max_at_end_a", "max_at_end_b"]
+
+[[extraction]]
 name = "4th eigenvalue"
 block = "eigenvalues"
-col = 0
-row = 3
+cols = ["eigenvalue"]
+raw_rows = 3
 
 [[criteria]]
 name = "must be equal"

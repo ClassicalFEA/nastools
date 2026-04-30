@@ -5,13 +5,77 @@ use std::collections::BTreeMap;
 use std::fmt::{Debug as DebugTrait, Display};
 use std::str::FromStr;
 
+use convert_case::{Case, Casing};
 use serde::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
+/// Folds a user-supplied index name down to a comparable form: lower-cased,
+/// with all non-alphanumeric runs collapsed into single underscores.
+pub fn fold_index_name(s: &str) -> String {
+  let mut out = String::with_capacity(s.len());
+  let mut last_us = true;
+  for c in s.chars() {
+    if c.is_ascii_alphanumeric() {
+      for d in c.to_lowercase() {
+        out.push(d);
+      }
+      last_us = false;
+    } else if !last_us {
+      out.push('_');
+      last_us = true;
+    }
+  }
+  while out.ends_with('_') {
+    out.pop();
+  }
+  return out;
+}
+
+/// Returns true if two strings match after folding via [`fold_index_name`].
+pub fn name_matches(a: &str, b: &str) -> bool {
+  return fold_index_name(a) == fold_index_name(b);
+}
+
 /// Generates a NasIndex type from pure enum fields. Saves some time.
+/// Pass `()` for the index_name to skip the [`IndexType`] impl (used for
+/// auxiliary enums like `BarEnd` that aren't full row/column indices).
 macro_rules! from_enum {
   (
+    $desc:literal,
+    $tname:ident,
+    [
+      $(
+        ($varname:ident, $varstr:literal),
+      )+
+    ]
+  ) => {
+    from_enum!(@core $desc, $tname, [$(($varname, $varstr),)+]);
+  };
+
+  (
+    $desc:literal,
+    $tname:ident,
+    $idx_name:literal,
+    [
+      $(
+        ($varname:ident, $varstr:literal),
+      )+
+    ]
+  ) => {
+    from_enum!(@core $desc, $tname, [$(($varname, $varstr),)+]);
+
+    impl IndexType for $tname {
+      const INDEX_NAME: &'static str = $idx_name;
+
+      fn legal_values() -> Option<Vec<String>> {
+        return Some(Self::canonical_legal_values());
+      }
+    }
+  };
+
+  (
+    @core
     $desc:literal,
     $tname:ident,
     [
@@ -53,11 +117,39 @@ macro_rules! from_enum {
           .map(|(a, b)| (b, a))
           .collect();
       }
+
+      /// Returns the canonical (snake_case) string form of every variant.
+      pub fn canonical_legal_values() -> Vec<String> {
+        return [$(stringify!($varname),)+]
+          .iter()
+          .map(|n| n.to_case(Case::Snake))
+          .collect();
+      }
     }
 
     impl Display for $tname {
       fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         return write!(f, "{}", self.name());
+      }
+    }
+
+    impl FromStr for $tname {
+      type Err = String;
+
+      fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let folded = fold_index_name(s);
+        $(
+          if folded == fold_index_name(stringify!($varname))
+            || folded == stringify!($varname).to_case(Case::Snake)
+            || folded == fold_index_name($varstr)
+          {
+            return Ok(Self::$varname);
+          }
+        )+
+        return Err(format!(
+          concat!("\"{}\" is not a valid ", stringify!($tname), " value"),
+          s
+        ));
       }
     }
   };
@@ -87,6 +179,18 @@ macro_rules! gen_with_inner(
 
     impl IndexType for $outer_type {
       const INDEX_NAME: &'static str = $name;
+
+      fn legal_values() -> Option<Vec<String>> {
+        return <$inner_type as IndexType>::legal_values();
+      }
+    }
+
+    impl FromStr for $outer_type {
+      type Err = <$inner_type as FromStr>::Err;
+
+      fn from_str(s: &str) -> Result<Self, Self::Err> {
+        return <$inner_type as FromStr>::from_str(s).map(Self);
+      }
     }
   }
 );
@@ -128,6 +232,100 @@ macro_rules! gen_nasindex {
         return match self {
           $(Self::$tn(_) => <$tn as IndexType>::INDEX_NAME,)*
         };
+      }
+
+      /// Returns the snake_case name of the type of this index, suitable as
+      /// a key in a script.
+      pub fn type_key(&self) -> String {
+        return match self {
+          $(Self::$tn(_) => stringify!($tn).to_case(Case::Snake),)*
+        };
+      }
+
+      /// Returns the entries of the parser registry: one per known index
+      /// subtype, with its snake_case key, its all-caps display name, an
+      /// optional list of legal canonical values, and a parser function.
+      pub fn parsers() -> Vec<NasIndexParser> {
+        return vec![
+          $(
+            NasIndexParser {
+              type_key: stringify!($tn).to_case(Case::Snake),
+              type_name: <$tn as IndexType>::INDEX_NAME,
+              legal_values: <$tn as IndexType>::legal_values(),
+              parse: |s| <$tn as FromStr>::from_str(s)
+                .map(NasIndex::from)
+                .map_err(|e| e.to_string()),
+            },
+          )*
+        ];
+      }
+
+      /// Tries to parse a string into a NasIndex. If `narrow` is supplied,
+      /// only parsers whose type_name is in the slice are tried.
+      ///
+      /// An optional `type:value` prefix can force a specific subtype, in
+      /// which case `narrow` is still respected as an additional filter.
+      pub fn parse_lenient(
+        s: &str,
+        narrow: Option<&[&str]>,
+      ) -> Result<Self, ParseLenientError> {
+        let (forced, payload) = match s.split_once(':') {
+          Some((tag, rest)) => {
+            let tag_folded = fold_index_name(tag);
+            let mut found: Option<&'static str> = None;
+            for p in Self::parsers().iter() {
+              if fold_index_name(&p.type_key) == tag_folded
+                || fold_index_name(p.type_name) == tag_folded
+              {
+                found = Some(p.type_name);
+                break;
+              }
+            }
+            match found {
+              Some(t) => (Some(t), rest.trim()),
+              None => (None, s),
+            }
+          }
+          None => (None, s),
+        };
+        let mut hits: Vec<NasIndex> = Vec::new();
+        let mut hit_types: Vec<&'static str> = Vec::new();
+        let mut considered = 0usize;
+        for p in Self::parsers().into_iter() {
+          if let Some(t) = forced {
+            if p.type_name != t {
+              continue;
+            }
+          }
+          if let Some(allow) = narrow {
+            if !allow.contains(&p.type_name) {
+              continue;
+            }
+          }
+          considered += 1;
+          if let Ok(v) = (p.parse)(payload) {
+            hits.push(v);
+            hit_types.push(p.type_name);
+          }
+        }
+        if considered == 0 {
+          return Err(ParseLenientError::NoCandidateTypes {
+            input: s.to_owned(),
+          });
+        }
+        match hits.len() {
+          0 => Err(ParseLenientError::NoMatch {
+            input: s.to_owned(),
+          }),
+          1 => Ok(hits.into_iter().next().unwrap()),
+          _ => Err(ParseLenientError::Ambiguous {
+            input: s.to_owned(),
+            matched_types: hit_types
+              .into_iter()
+              .map(|t| t.to_owned())
+              .collect(),
+          }),
+        }
       }
     }
   };
@@ -198,19 +396,94 @@ gen_nasindex!(
   PlateStrainField,
   GridPointCsys,
   RealEigenvalueField,
-  EigenSolutionMode,
+  EigenModeNumber,
 );
 
 /// All field indexing types must implement this trait.
 pub trait IndexType:
-  Copy + Ord + Eq + Into<NasIndex> + Display + DebugTrait
+  Copy + Ord + Eq + Into<NasIndex> + Display + DebugTrait + FromStr
 {
   /// The name of this type of index, all caps.
   const INDEX_NAME: &'static str;
+
+  /// Returns the canonical, lower-case list of all legal values for this
+  /// index type, if it can be enumerated. Returns `None` for index types
+  /// that range over an unbounded domain (e.g. element IDs).
+  fn legal_values() -> Option<Vec<String>> {
+    return None;
+  }
 }
+
+/// Description of one entry in the [`NasIndex`] parser registry.
+pub struct NasIndexParser {
+  /// The snake_case Rust type name; usable as a `type:value` prefix in a
+  /// script.
+  pub type_key: String,
+  /// The all-caps display name (matches `IndexType::INDEX_NAME`).
+  pub type_name: &'static str,
+  /// All legal canonical string values, if enumerable.
+  pub legal_values: Option<Vec<String>>,
+  /// Tries to parse the value portion of an index string into a NasIndex.
+  pub parse: fn(&str) -> Result<NasIndex, String>,
+}
+
+/// Errors that may arise when parsing a string into a [`NasIndex`].
+#[derive(Debug, Clone)]
+pub enum ParseLenientError {
+  /// No index type matched the input.
+  NoMatch {
+    /// The input string.
+    input: String,
+  },
+  /// More than one index type matched the input.
+  Ambiguous {
+    /// The input string.
+    input: String,
+    /// The all-caps names of the index types that matched.
+    matched_types: Vec<String>,
+  },
+  /// The narrowing filter excluded all parsers.
+  NoCandidateTypes {
+    /// The input string.
+    input: String,
+  },
+}
+
+impl Display for ParseLenientError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    return match self {
+      Self::NoMatch { input } => {
+        write!(f, "\"{input}\" does not name any known index value")
+      }
+      Self::Ambiguous {
+        input,
+        matched_types,
+      } => write!(
+        f,
+        "\"{input}\" is ambiguous, matched: {} (try a `type:value` prefix)",
+        matched_types.join(", ")
+      ),
+      Self::NoCandidateTypes { input } => {
+        write!(f, "no index types apply to \"{input}\" in this context")
+      }
+    };
+  }
+}
+
+impl std::error::Error for ParseLenientError {}
 
 impl IndexType for Dof {
   const INDEX_NAME: &'static str = "DOF";
+
+  fn legal_values() -> Option<Vec<String>> {
+    return Some(
+      Self::all()
+        .iter()
+        .map(|d| format!("{}{}", d.dof_type.letter(), d.axis.letter()))
+        .map(|s| s.to_lowercase())
+        .collect(),
+    );
+  }
 }
 
 /// The possible origins for a force.
@@ -384,6 +657,56 @@ impl IndexType for GridPointForceOrigin {
   const INDEX_NAME: &'static str = "GRID POINT FORCE ORIGIN";
 }
 
+impl FromStr for ForceOrigin {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let folded = fold_index_name(s);
+    if folded == "load" || folded == "applied_load" {
+      return Ok(Self::Load);
+    }
+    if folded == "spc" || folded == "single_point_constraint" {
+      return Ok(Self::SinglePointConstraint);
+    }
+    if folded == "mpc" || folded == "multi_point_constraint" {
+      return Ok(Self::MultiPointConstraint);
+    }
+    if let Some(rest) = folded.strip_prefix("elem_") {
+      let eid: usize = rest
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+      return Ok(Self::Element { elem: eid.into() });
+    }
+    return Err(format!(
+      "\"{s}\" is not a valid force origin; try one of \
+       load, spc, mpc, elem_<id>"
+    ));
+  }
+}
+
+impl FromStr for GridPointForceOrigin {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let (origin_part, gid_part) = s.split_once('@').ok_or_else(|| {
+      format!(
+        "\"{s}\" is not a valid GRID POINT FORCE ORIGIN; \
+         expected \"<origin>@<gid>\" -- e.g. \"load@42\", \"spc@42\", \
+         \"mpc@42\", \"elem_100@42\""
+      )
+    })?;
+    let force_origin = ForceOrigin::from_str(origin_part.trim())?;
+    let gid: usize = gid_part
+      .trim()
+      .parse()
+      .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    return Ok(Self {
+      grid_point: gid.into(),
+      force_origin,
+    });
+  }
+}
+
 /// A point within an element.
 #[derive(
   Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq,
@@ -487,6 +810,59 @@ impl IndexType for PointInElement {
   const INDEX_NAME: &'static str = "POINT IN ELEMENT";
 }
 
+impl FromStr for ElementPoint {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let folded = fold_index_name(s);
+    if folded == "centroid" {
+      return Ok(Self::Centroid);
+    }
+    if folded == "anywhere" || folded == "anywhere_in_the_element" {
+      return Ok(Self::Anywhere);
+    }
+    if let Some(rest) = folded.strip_prefix("corner_") {
+      let gid: usize = rest
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+      return Ok(Self::Corner(gid.into()));
+    }
+    if let Some(rest) = folded.strip_prefix("midpoint_") {
+      let gid: usize = rest
+        .parse()
+        .map_err(|e: std::num::ParseIntError| e.to_string())?;
+      return Ok(Self::Midpoint(gid.into()));
+    }
+    return Err(format!(
+      "\"{s}\" is not a valid element point; try one of \
+       centroid, anywhere, corner_<gid>, midpoint_<gid>"
+    ));
+  }
+}
+
+impl FromStr for PointInElement {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let (eid_part, point_part) = s.split_once('/').ok_or_else(|| {
+      format!(
+        "\"{s}\" is not a valid POINT IN ELEMENT; \
+         expected \"<eid>/<point>\" -- e.g. \"100/centroid\", \
+         \"100/corner_42\", \"100/midpoint_42\", \"100/anywhere\""
+      )
+    })?;
+    let eid: usize = eid_part
+      .trim()
+      .parse()
+      .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    let point = ElementPoint::from_str(point_part.trim())?;
+    return Ok(Self {
+      element: eid.into(),
+      point,
+    });
+  }
+}
+
 /// An element and a point within it, plus a side.
 #[derive(
   Copy,
@@ -519,6 +895,53 @@ impl IndexType for ElementSidedPoint {
   const INDEX_NAME: &'static str = "ELEMENT, POINT AND SIDE";
 }
 
+impl FromStr for ElementSide {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let folded = fold_index_name(s);
+    return match folded.as_str() {
+      "top" | "z2" | "top_side" => Ok(Self::Top),
+      "bottom" | "z1" | "bottom_side" => Ok(Self::Bottom),
+      _ => Err(format!(
+        "\"{s}\" is not a valid element side; try \"top\" or \"bottom\""
+      )),
+    };
+  }
+}
+
+impl FromStr for ElementSidedPoint {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let mut parts = s.splitn(3, '/');
+    let eid_part = parts.next().unwrap_or("");
+    let point_part = parts.next();
+    let side_part = parts.next();
+    let (point_part, side_part) = match (point_part, side_part) {
+      (Some(p), Some(d)) => (p, d),
+      _ => {
+        return Err(format!(
+          "\"{s}\" is not a valid ELEMENT, POINT AND SIDE; \
+           expected \"<eid>/<point>/<side>\" -- e.g. \
+           \"100/centroid/top\", \"100/corner_42/bottom\""
+        ))
+      }
+    };
+    let eid: usize = eid_part
+      .trim()
+      .parse()
+      .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    let point = ElementPoint::from_str(point_part.trim())?;
+    let side = ElementSide::from_str(side_part.trim())?;
+    return Ok(Self {
+      element: eid.into(),
+      point,
+      side,
+    });
+  }
+}
+
 impl ElementSidedPoint {
   /// Flips the side of this element point.
   pub fn flip_side(&mut self) {
@@ -529,6 +952,7 @@ impl ElementSidedPoint {
 from_enum!(
   "The columns for the stresses table for plate elements.",
   PlateStressField,
+  "PLATE STRESS FIELD",
   [
     (FibreDistance, "FIBRE DISTANCE"),
     (NormalX, "NORMAL-X"),
@@ -541,10 +965,6 @@ from_enum!(
   ]
 );
 
-impl IndexType for PlateStressField {
-  const INDEX_NAME: &'static str = "PLATE STRESS FIELD";
-}
-
 gen_with_inner!(
   "The columns for the strains table for plate elements.",
   "PLATE STRAIN FIELD",
@@ -555,6 +975,7 @@ gen_with_inner!(
 from_enum!(
   "The columns for the engineering forces table for a quadrilateral element.",
   PlateForceField,
+  "2D ELEM FORCE FIELD",
   [
     (NormalX, "Nx"),
     (NormalY, "Ny"),
@@ -567,19 +988,12 @@ from_enum!(
   ]
 );
 
-impl IndexType for PlateForceField {
-  const INDEX_NAME: &'static str = "2D ELEM FORCE FIELD";
-}
-
 from_enum!(
   "Engineering forces for ROD elements.",
   RodForceField,
+  "ROD FORCE FIELD",
   [(AxialForce, "AXIAL FORCE"), (Torque, "TORQUE"),]
 );
-
-impl IndexType for RodForceField {
-  const INDEX_NAME: &'static str = "ROD FORCE FIELD";
-}
 
 from_enum!(
   "An end of a BAR element.",
@@ -650,6 +1064,36 @@ impl Display for BarForceField {
 
 impl IndexType for BarForceField {
   const INDEX_NAME: &'static str = "BAR FORCE FIELD";
+
+  fn legal_values() -> Option<Vec<String>> {
+    return Some(
+      Self::all()
+        .iter()
+        .map(|v| fold_index_name(&v.to_string()))
+        .collect(),
+    );
+  }
+}
+
+impl FromStr for BarForceField {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let folded = fold_index_name(s);
+    for v in Self::all().iter() {
+      if fold_index_name(&v.to_string()) == folded {
+        return Ok(*v);
+      }
+    }
+    return Err(format!(
+      "\"{s}\" is not a valid BarForceField; try one of {}",
+      Self::all()
+        .iter()
+        .map(|v| fold_index_name(&v.to_string()))
+        .collect::<Vec<_>>()
+        .join(", ")
+    ));
+  }
 }
 
 impl BarForceField {
@@ -697,32 +1141,23 @@ impl BarForceField {
 from_enum!(
   "Generic single-force field.",
   SingleForce,
+  "FORCE",
   [(Force, "FORCE"),]
 );
 
 from_enum!(
   "Generic single-stress field.",
   SingleStress,
+  "STRESS",
   [(Stress, "STRESS"),]
 );
 
 from_enum!(
   "Generic single-strain field.",
   SingleStrain,
+  "STRAIN",
   [(Strain, "STRAIN"),]
 );
-
-impl IndexType for SingleForce {
-  const INDEX_NAME: &'static str = "FORCE";
-}
-
-impl IndexType for SingleStress {
-  const INDEX_NAME: &'static str = "STRESS";
-}
-
-impl IndexType for SingleStrain {
-  const INDEX_NAME: &'static str = "STRAIN";
-}
 
 impl From<SingleStress> for SingleStrain {
   fn from(_value: SingleStress) -> Self {
@@ -733,6 +1168,7 @@ impl From<SingleStress> for SingleStrain {
 from_enum!(
   "Rod element stress field.",
   RodStressField,
+  "ROD STRESS FIELD",
   [
     (Axial, "AXIAL"),
     (AxialSafetyMargin, "AXIAL SAFETY MARGIN"),
@@ -740,10 +1176,6 @@ from_enum!(
     (TorsionalSafetyMargin, "TORSIONAL SAFETY MARGIN"),
   ]
 );
-
-impl IndexType for RodStressField {
-  const INDEX_NAME: &'static str = "ROD STRESS FIELD";
-}
 
 gen_with_inner!(
   "The columns for the strains table for rod elements.",
@@ -823,6 +1255,36 @@ impl Display for BarStressField {
 
 impl IndexType for BarStressField {
   const INDEX_NAME: &'static str = "BAR STRESS FIELD";
+
+  fn legal_values() -> Option<Vec<String>> {
+    return Some(
+      Self::all()
+        .iter()
+        .map(|v| fold_index_name(&v.to_string()))
+        .collect(),
+    );
+  }
+}
+
+impl FromStr for BarStressField {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let folded = fold_index_name(s);
+    for v in Self::all().iter() {
+      if fold_index_name(&v.to_string()) == folded {
+        return Ok(*v);
+      }
+    }
+    return Err(format!(
+      "\"{s}\" is not a valid BarStressField; try one of {}",
+      Self::all()
+        .iter()
+        .map(|v| fold_index_name(&v.to_string()))
+        .collect::<Vec<_>>()
+        .join(", ")
+    ));
+  }
 }
 
 impl BarStressField {
@@ -914,6 +1376,29 @@ impl IndexType for GridPointCsys {
   const INDEX_NAME: &'static str = "GRID POINT COORD SYS";
 }
 
+impl FromStr for GridPointCsys {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let parts: Vec<&str> = s
+      .split(|c: char| !c.is_ascii_digit())
+      .filter(|p| !p.is_empty())
+      .collect();
+    if parts.len() != 2 {
+      return Err(format!(
+        "\"{s}\" is not a valid GridPointCsys; expected \"<gid> on <cid>\""
+      ));
+    }
+    let gid: usize = parts[0]
+      .parse()
+      .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    let cid: usize = parts[1]
+      .parse()
+      .map_err(|e: std::num::ParseIntError| e.to_string())?;
+    return Ok(Self::from((gid, cid)));
+  }
+}
+
 impl Display for GridPointCsys {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{} ON {}", self.gid, self.cid)
@@ -942,13 +1427,29 @@ impl From<(usize, usize)> for GridPointCsys {
   Eq,
   derive_more::From,
 )]
-pub struct EigenSolutionMode(pub i32);
+pub struct EigenModeNumber(pub i32);
 
-impl IndexType for EigenSolutionMode {
-  const INDEX_NAME: &'static str = "EIGEN SOLUTION MODE";
+impl IndexType for EigenModeNumber {
+  const INDEX_NAME: &'static str = "MODE";
 }
 
-impl Display for EigenSolutionMode {
+impl FromStr for EigenModeNumber {
+  type Err = String;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    let trimmed = s.trim();
+    let digits = trimmed
+      .strip_prefix("mode_")
+      .or_else(|| trimmed.strip_prefix("MODE_"))
+      .or_else(|| trimmed.strip_prefix("mode"))
+      .or_else(|| trimmed.strip_prefix("MODE"))
+      .map(|r| r.trim_start_matches('_').trim())
+      .unwrap_or(trimmed);
+    return digits.parse::<i32>().map(Self).map_err(|e| e.to_string());
+  }
+}
+
+impl Display for EigenModeNumber {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     f.write_str("MODE")
   }
@@ -957,6 +1458,7 @@ impl Display for EigenSolutionMode {
 from_enum!(
   "Field Values for Real Eigenvalues",
   RealEigenvalueField,
+  "EIGENVALUE FIELDS",
   [
     (Eigenvalue, "EIGENVALUE"),
     (Radians, "RADIANS"),
@@ -965,7 +1467,3 @@ from_enum!(
     (GeneralizedStiffness, "GENERALIZED STIFFNESS"),
   ]
 );
-
-impl IndexType for RealEigenvalueField {
-  const INDEX_NAME: &'static str = "EIGENVALUE FIELDS";
-}

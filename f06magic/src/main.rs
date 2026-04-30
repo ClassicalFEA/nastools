@@ -14,9 +14,28 @@ pub(crate) mod utils;
 use std::error::Error;
 use std::path::Path;
 
+use clap::Parser;
+use f06::prelude::*;
 use toml::de::Error as TomlError;
 
 use crate::script::Script;
+
+/// f06magic command-line interface.
+#[derive(Parser, Debug)]
+#[command(version, about)]
+struct Cli {
+  /// The script to run, if any.
+  script: Option<String>,
+  /// List the row/column index types accepted by every block (or only the
+  /// requested block type) and exit. Useful when authoring a script.
+  #[arg(
+    long,
+    value_name = "BLOCK",
+    num_args = 0..=1,
+    default_missing_value = ""
+  )]
+  indices: Option<String>,
+}
 
 /// Runs a script in a given path and outputs results.
 fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
@@ -57,12 +76,37 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
   return Ok(());
 }
 
-fn main() {
-  if let Some(p) = std::env::args().nth(1) {
-    if let Err(e) = run_script(p) {
-      eprintln!("{e}");
+/// Prints the row/column index reference for one or all block types.
+fn print_indices(filter: &str) {
+  let mut printed = 0usize;
+  for bt in BlockType::all() {
+    if !filter.is_empty()
+      && !bt.snake_case_name().eq_ignore_ascii_case(filter)
+      && !bt.short_name().eq_ignore_ascii_case(filter)
+    {
+      continue;
     }
-  } else {
-    eprintln!("No script supplied!");
+    print!("{}", bt.describe_indices());
+    println!();
+    printed += 1;
+  }
+  if printed == 0 {
+    eprintln!("no block type matched \"{filter}\"");
+  }
+}
+
+fn main() {
+  let cli = Cli::parse();
+  if let Some(filter) = cli.indices.as_deref() {
+    print_indices(filter);
+    return;
+  }
+  match cli.script {
+    Some(p) => {
+      if let Err(e) = run_script(p) {
+        eprintln!("{e}");
+      }
+    }
+    None => eprintln!("No script supplied!"),
   }
 }

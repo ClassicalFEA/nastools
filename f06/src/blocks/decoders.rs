@@ -1512,7 +1512,7 @@ pub struct RealEigenvaluesDecoder {
 
 impl BlockDecoder for RealEigenvaluesDecoder {
   type MatScalar = f64;
-  type RowIndex = EigenSolutionMode;
+  type RowIndex = EigenModeNumber;
   type ColumnIndex = RealEigenvalueField;
   const MATWIDTH: usize = 5;
   const BLOCK_TYPE: BlockType = BlockType::RealEigenvalues;
@@ -1547,7 +1547,7 @@ impl BlockDecoder for RealEigenvaluesDecoder {
     let Some(mode) = nth_natural(line, 0) else {
       return LineResponse::Unsupported;
     };
-    self.data.insert_raw(EigenSolutionMode(mode as i32), &dof);
+    self.data.insert_raw(EigenModeNumber(mode as i32), &dof);
     LineResponse::Data
   }
 }
@@ -1575,10 +1575,10 @@ fn real_eigenvalues_mystran() {
   }
   let mut row_idxs = dec.data.row_indices().keys().copied();
 
-  assert_eq!(row_idxs.next(), Some(EigenSolutionMode(1)));
-  assert_eq!(row_idxs.next(), Some(EigenSolutionMode(2)));
-  assert_eq!(row_idxs.next(), Some(EigenSolutionMode(3)));
-  assert_eq!(row_idxs.next(), Some(EigenSolutionMode(4)));
+  assert_eq!(row_idxs.next(), Some(EigenModeNumber(1)));
+  assert_eq!(row_idxs.next(), Some(EigenModeNumber(2)));
+  assert_eq!(row_idxs.next(), Some(EigenModeNumber(3)));
+  assert_eq!(row_idxs.next(), Some(EigenModeNumber(4)));
   assert_eq!(row_idxs.next(), None);
 
   assert_eq!(dec.data.data.as_ref().unwrap().row_iter().count(), 4);

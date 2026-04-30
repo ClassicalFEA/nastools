@@ -1,0 +1,142 @@
+[files]
+mystran_all_elem = "examples/mystran/SB-ALL-ELEM-TEST.F06"
+mystran_all_elem_giv = "examples/mystran/EB-ALL-ELEM-TEST-GIV.F06"
+scnastran_all_elem = "examples/scnastran/SB-ALL-ELEM-TEST_scnas_postexport.f06"
+
+# bar-stress fields by name -- the parser folds away case and whitespace.
+[[extraction]]
+name = "bar end-A maxima"
+block = "bar_stresses"
+cols = ["max_at_end_a", "min_at_end_a"]
+
+# multiple block types share the same column kind ("DOF"), so a single col
+# list resolves correctly across all of them.
+[[extraction]]
+name = "in-plane translations across all dof blocks"
+blocks = ["displacements", "spc_forces", "applied_forces", "eigenvector"]
+cols = ["tx", "ty"]
+
+# row filters work the same way. plate stresses are indexed by
+# (element, point, side) so use raw_rows when you really want a
+# positional slice; here we just filter the column kind.
+[[extraction]]
+name = "von mises on quads"
+block = "quad_stresses"
+cols = ["von_mises", "major", "minor"]
+
+# compound row indices: ELEMENT, POINT AND SIDE is "<eid>/<point>/<side>".
+# point is one of {centroid, anywhere, corner_<gid>, midpoint_<gid>}; side
+# is "top" or "bottom". use --indices <block> for a quick reference.
+[[extraction]]
+name = "quad 200 top-side centroid stresses"
+block = "quad_stresses"
+rows = ["200/centroid/top"]
+cols = ["von_mises"]
+
+# compound row indices: POINT IN ELEMENT is "<eid>/<point>".
+[[extraction]]
+name = "quad 200 corner-42 forces"
+block = "quad_forces"
+rows = ["200/corner_42"]
+
+# compound row indices: GRID POINT FORCE ORIGIN is "<origin>@<gid>", with
+# origin in {load, spc, mpc, elem_<id>}. great for picking out exactly
+# which contribution to a node's force balance you care about.
+[[extraction]]
+name = "applied load contribution at grid 42"
+block = "grid_point_force_balance"
+rows = ["load@42"]
+
+# narrow to a single rod element and pull just torsional fields.
+[[extraction]]
+name = "rod 102 torsion"
+block = "rod_stresses"
+elements = [102]
+cols = ["torsional", "torsional_safety_margin"]
+
+# 2D force fields share a kind across tria/quad; ask for the bending moments.
+[[extraction]]
+name = "plate bending moments"
+blocks = ["tria_forces", "quad_forces"]
+cols = ["moment_x", "moment_y", "moment_xy"]
+
+# eigenvalue table: row is the mode index (1-based in the f06), column is
+# the named field. modes 2..=4 with frequency-related fields only.
+[[extraction]]
+name = "modes 2-4 frequencies"
+block = "real_eigenvalues"
+rows = ["mode_2", "mode_3", "mode_4"]
+cols = ["radians", "cycles"]
+
+# bar forces: pull the plane-1 bending diagram (both ends).
+[[extraction]]
+name = "bar plane-1 bending diagram"
+block = "bar_forces"
+cols = ["bend_moment_end_a_plane_1", "bend_moment_end_b_plane_1"]
+
+# disambiguate when an unprefixed name would match more than one type:
+# "axial" exists on both rod stresses and bar stresses, but with the
+# block context narrowed to bar_stresses it resolves cleanly.
+[[extraction]]
+name = "bar axial only"
+block = "bar_stresses"
+cols = ["axial"]
+
+# the type:value prefix forces a specific NasIndex subtype. with a single
+# block configured the prefix is usually redundant -- "tx" alone resolves
+# to Dof here because the block context narrows the parser set to one
+# candidate kind. it's shown for documentation only.
+[[extraction]]
+name = "explicit dof prefix (redundant here)"
+block = "displacements"
+cols = ["dof:tx", "dof:ry"]
+
+# the prefix becomes necessary when the configured blocks expose more than
+# one column kind that share a value name. bar_stresses and rod_stresses
+# both define an "axial" column, so a bare "axial" would be reported as
+# ambiguous at script load time. the prefix disambiguates.
+[[extraction]]
+name = "axial across bars and rods"
+blocks = ["bar_stresses", "rod_stresses"]
+cols = ["bar_stress_field:axial", "rod_stress_field:axial"]
+
+# raw_cols / raw_rows remain available for purely positional access.
+[[extraction]]
+name = "first eigenvalue, first column"
+block = "real_eigenvalues"
+raw_rows = 0
+raw_cols = 0
+
+[[criteria]]
+name = "must be equal"
+max_difference = 0.0
+
+[[criteria]]
+name = "within 5%"
+max_ratio = 1.05
+
+[[comparison]]
+name = "bar maxima agree exactly"
+reference_f06 = "scnastran_all_elem"
+test_f06 = "mystran_all_elem"
+extraction = "bar end-A maxima"
+criteria = "must be equal"
+
+[[comparison]]
+name = "plate bending within 5%"
+reference_f06 = "scnastran_all_elem"
+test_f06 = "mystran_all_elem"
+extraction = "plate bending moments"
+criteria = "within 5%"
+
+[[check]]
+name = "rod 102 torsion is zero"
+file = "mystran_all_elem"
+extraction = "rod 102 torsion"
+all_equal = 0
+
+[[check]]
+name = "modes 2-4 cycles within 0-1000 Hz"
+file = "mystran_all_elem_giv"
+extraction = "modes 2-4 frequencies"
+all_in_range = [0.0, 1000.0]

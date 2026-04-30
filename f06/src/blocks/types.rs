@@ -8,6 +8,7 @@ use convert_case::{Case, Casing};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
 
 use crate::blocks::decoders::*;
+use crate::blocks::BlockDecoder;
 use crate::prelude::*;
 
 /// Generates the BlockType enum and calls the init functions for them.
@@ -84,6 +85,50 @@ macro_rules! gen_block_types {
       pub const fn elem_type(&self) -> Option<ElementType> {
         return match self {
           $(Self::$bname => $etype,)*
+        };
+      }
+
+      /// Returns the all-caps name (i.e. [`IndexType::INDEX_NAME`]) of the
+      /// row index type used by this block.
+      pub fn row_index_kind(&self) -> &'static str {
+        return match self {
+          $(
+            Self::$bname =>
+              <<$dec as BlockDecoder>::RowIndex as IndexType>::INDEX_NAME,
+          )*
+        };
+      }
+
+      /// Returns the all-caps name (i.e. [`IndexType::INDEX_NAME`]) of the
+      /// column index type used by this block.
+      pub fn col_index_kind(&self) -> &'static str {
+        return match self {
+          $(
+            Self::$bname =>
+              <<$dec as BlockDecoder>::ColumnIndex as IndexType>::INDEX_NAME,
+          )*
+        };
+      }
+
+      /// Returns the canonical legal values for the row index type, if it
+      /// can be enumerated.
+      pub fn row_index_legal_values(&self) -> Option<Vec<String>> {
+        return match self {
+          $(
+            Self::$bname =>
+              <<$dec as BlockDecoder>::RowIndex as IndexType>::legal_values(),
+          )*
+        };
+      }
+
+      /// Returns the canonical legal values for the column index type, if it
+      /// can be enumerated.
+      pub fn col_index_legal_values(&self) -> Option<Vec<String>> {
+        return match self {
+          $(
+            Self::$bname =>
+              <<$dec as BlockDecoder>::ColumnIndex as IndexType>::legal_values(),
+          )*
         };
       }
 
@@ -400,5 +445,90 @@ impl FromStr for BlockType {
       }
     }
     return Err(format!("invalid block type name \"{s}\""));
+  }
+}
+
+/// Help record describing the row/column index types of a single block type,
+/// produced by [`BlockType::describe_indices`].
+#[derive(Clone, Debug)]
+pub struct IndexHelp {
+  /// The block type being described.
+  pub block: BlockType,
+  /// All-caps name of the row index type.
+  pub row_kind: &'static str,
+  /// Legal canonical row values, if enumerable.
+  pub row_legal: Option<Vec<String>>,
+  /// All-caps name of the column index type.
+  pub col_kind: &'static str,
+  /// Legal canonical column values, if enumerable.
+  pub col_legal: Option<Vec<String>>,
+}
+
+impl Display for IndexHelp {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    writeln!(
+      f,
+      "{} ({})",
+      self.block.snake_case_name(),
+      self.block.desc().to_lowercase()
+    )?;
+    let open_ended_hint = |kind: &str| -> &'static str {
+      return match kind {
+        "GRID POINT ID" => {
+          "open-ended integer ID, e.g. \"42\"; usually filtered via `nodes`"
+        }
+        "ELEMENT ID" => {
+          "open-ended integer ID, e.g. \"100\"; usually filtered via `elements`"
+        }
+        "MODE" => "open-ended mode number, e.g. \"mode_2\" or \"2\"",
+        "GRID POINT FORCE ORIGIN" => {
+          "compound \"<origin>@<gid>\"; \
+           origin in {load, spc, mpc, elem_<id>}; \
+           e.g. \"load@42\", \"spc@42\", \"elem_100@42\""
+        }
+        "POINT IN ELEMENT" => {
+          "compound \"<eid>/<point>\"; \
+           point in {centroid, anywhere, corner_<gid>, midpoint_<gid>}; \
+           e.g. \"100/centroid\", \"100/corner_42\""
+        }
+        "ELEMENT, POINT AND SIDE" => {
+          "compound \"<eid>/<point>/<side>\"; \
+           side in {top, bottom}; \
+           e.g. \"100/centroid/top\", \"100/corner_42/bottom\""
+        }
+        "GRID POINT COORD SYS" => {
+          "compound, e.g. \"42 on 0\" (grid 42 in coord sys 0)"
+        }
+        _ => "open-ended; filter by ID",
+      };
+    };
+    let render = |label: &str,
+                  kind: &str,
+                  legal: &Option<Vec<String>>,
+                  f: &mut std::fmt::Formatter<'_>|
+     -> std::fmt::Result {
+      write!(f, "  {label}: {kind}")?;
+      match legal {
+        Some(v) if !v.is_empty() => writeln!(f, " — {}", v.join(", ")),
+        _ => writeln!(f, " ({})", open_ended_hint(kind)),
+      }
+    };
+    render("rows", self.row_kind, &self.row_legal, f)?;
+    render("cols", self.col_kind, &self.col_legal, f)?;
+    return Ok(());
+  }
+}
+
+impl BlockType {
+  /// Produces an [`IndexHelp`] record listing the row/column index types and
+  /// (when enumerable) their canonical legal values.
+  pub fn describe_indices(&self) -> IndexHelp {
+    return IndexHelp {
+      block: *self,
+      row_kind: self.row_index_kind(),
+      row_legal: self.row_index_legal_values(),
+      col_kind: self.col_index_kind(),
+      col_legal: self.col_index_legal_values(),
+    };
   }
 }

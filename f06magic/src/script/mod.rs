@@ -5,6 +5,7 @@ pub(crate) mod comparison;
 pub(crate) mod criteria;
 pub(crate) mod errors;
 pub(crate) mod extraction;
+pub(crate) mod index;
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -14,7 +15,9 @@ use serde::{Deserialize, Serialize};
 use crate::script::check::{Check, CheckResult};
 use crate::script::comparison::{Comparison, ComparisonResult};
 use crate::script::criteria::SimpleCriteria;
-use crate::script::errors::{CheckRunError, ComparisonRunError};
+use crate::script::errors::{
+  CheckRunError, ComparisonRunError, ScriptValidationError,
+};
 use crate::script::extraction::SimpleExtraction;
 
 /// An f06magic script. Contains decks, extractions, criteria, and tests.
@@ -39,19 +42,21 @@ pub(crate) struct Script {
 
 impl Script {
   /// Prepares a script for running: parses F06s and resolves names.
-  pub(crate) fn prepare(self) -> Result<ReadyScript, ParserCrash> {
+  pub(crate) fn prepare(self) -> Result<ReadyScript, ScriptPrepareError> {
     let mut files: BTreeMap<String, F06File> = BTreeMap::new();
     for (n, p) in self.files {
       let read = OnePassParser::parse_file(&p)?;
       files.insert(n, read);
     }
+    let mut extractions: BTreeMap<String, Extraction> = BTreeMap::new();
+    for simple in self.extractions {
+      let name = simple.name.clone();
+      let resolved = simple.resolve()?;
+      extractions.insert(name, resolved);
+    }
     return Ok(ReadyScript {
       files,
-      extractions: self
-        .extractions
-        .into_iter()
-        .map(|e| (e.name.clone(), e))
-        .collect(),
+      extractions,
       criteria: self
         .criteria
         .into_iter()
@@ -71,13 +76,45 @@ impl Script {
   }
 }
 
+/// Errors during [`Script::prepare`].
+#[derive(Debug)]
+pub(crate) enum ScriptPrepareError {
+  /// One of the F06 files failed to parse.
+  Parse(ParserCrash),
+  /// One of the simple extractions could not be resolved.
+  Validation(ScriptValidationError),
+}
+
+impl From<ParserCrash> for ScriptPrepareError {
+  fn from(e: ParserCrash) -> Self {
+    return Self::Parse(e);
+  }
+}
+
+impl From<ScriptValidationError> for ScriptPrepareError {
+  fn from(e: ScriptValidationError) -> Self {
+    return Self::Validation(e);
+  }
+}
+
+impl std::fmt::Display for ScriptPrepareError {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    return match self {
+      Self::Parse(e) => write!(f, "{e}"),
+      Self::Validation(e) => write!(f, "{e}"),
+    };
+  }
+}
+
+impl std::error::Error for ScriptPrepareError {}
+
 /// A script that is ready to run after names having been resolved and F06 files
 /// having been parsed.
 pub(crate) struct ReadyScript {
   /// The files used in this script.
   pub(crate) files: BTreeMap<String, F06File>,
   /// The extractions within this script.
-  pub(crate) extractions: BTreeMap<String, SimpleExtraction>,
+  pub(crate) extractions: BTreeMap<String, Extraction>,
   /// The comparison criteria within this script.
   pub(crate) criteria: BTreeMap<String, SimpleCriteria>,
   /// The comparisons within this script.
@@ -119,12 +156,10 @@ impl ReadyScript {
       .into();
     let mut indices: BTreeSet<DatumIndex> = BTreeSet::new();
     for en in comparison.extractions.clone().into_iter() {
-      let ex: Extraction = self
+      let ex = self
         .extractions
         .get(&en)
-        .ok_or(ComparisonRunError::ExtractionNotFound(en.clone()))?
-        .clone()
-        .into();
+        .ok_or(ComparisonRunError::ExtractionNotFound(en.clone()))?;
       indices.extend(ex.lookup(ref_file));
       indices.extend(ex.lookup(test_file));
     }
@@ -161,12 +196,10 @@ impl ReadyScript {
           .files
           .get(f06_name)
           .ok_or(CheckRunError::FileNotFound(f06_name.to_string()))?;
-        let ex: Extraction = self
+        let ex = self
           .extractions
           .get(en)
-          .ok_or(CheckRunError::ExtractionNotFound(en.clone()))?
-          .clone()
-          .into();
+          .ok_or(CheckRunError::ExtractionNotFound(en.clone()))?;
         let nums = ex.lookup(f06).map(|di| (di, di.get_from(f06).unwrap()));
         let pres = check.run_for(nums);
         results

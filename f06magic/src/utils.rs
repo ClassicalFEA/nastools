@@ -139,6 +139,20 @@ impl<T> IntoIterator for AnyAmount<T> {
   }
 }
 
+impl<'a, T> IntoIterator for &'a AnyAmount<T> {
+  type Item = &'a T;
+
+  type IntoIter = Box<dyn Iterator<Item = &'a T> + 'a>;
+
+  fn into_iter(self) -> Self::IntoIter {
+    return match self {
+      AnyAmount::None => Box::new(std::iter::empty()),
+      AnyAmount::One(x) => Box::new(std::iter::once(x)),
+      AnyAmount::Many(v) => Box::new(v.iter()),
+    };
+  }
+}
+
 impl<T> From<AnyAmount<T>> for Specifier<T> {
   fn from(value: AnyAmount<T>) -> Self {
     return match value {

@@ -81,7 +81,7 @@ pub fn ixfn_fo(index: NasIndex) -> Result<CsvField, ConversionError> {
 /// Extracts the Eigen solution mode
 pub fn ixfn_eigen_mode(index: NasIndex) -> Result<CsvField, ConversionError> {
   match index {
-    NasIndex::EigenSolutionMode(m) => Ok(CsvField::Natural(m.0 as usize)),
+    NasIndex::EigenModeNumber(m) => Ok(CsvField::Natural(m.0 as usize)),
     idx => Err(ConversionError::BadRowIndexType(idx)),
   }
 }
