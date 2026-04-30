@@ -64,7 +64,7 @@ impl Check {
         results.flagged.insert(di);
         continue;
       }
-      if self.all_in_range.is_some_and(|(a, b)| (x < a || x > b)) {
+      if self.all_in_range.is_some_and(|(a, b)| x < a || x > b) {
         results.flagged.insert(di);
         continue;
       }
@@ -79,7 +79,7 @@ impl Check {
       if self
         .ranges
         .as_ref()
-        .is_some_and(|v| v.get(i).is_some_and(|(a, b)| (x < *a || x > *b)))
+        .is_some_and(|v| v.get(i).is_some_and(|(a, b)| x < *a || x > *b))
       {
         results.flagged.insert(di);
         continue;

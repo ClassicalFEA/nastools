@@ -370,7 +370,7 @@ impl FinalBlock {
     let nixes: Vec<NasIndex> = self.col_indices.keys().copied().collect();
     let mut ns: Vec<usize> = self.col_indices.values().copied().collect();
     ns.sort();
-    for (nix, i) in nixes.into_iter().zip(ns.into_iter()) {
+    for (nix, i) in nixes.into_iter().zip(ns) {
       let nswap = self
         .col_indices
         .iter()
@@ -388,7 +388,7 @@ impl FinalBlock {
     let nixes: Vec<NasIndex> = self.row_indices.keys().copied().collect();
     let mut ns: Vec<usize> = self.row_indices.values().copied().collect();
     ns.sort();
-    for (nix, i) in nixes.into_iter().zip(ns.into_iter()) {
+    for (nix, i) in nixes.into_iter().zip(ns) {
       let nswap = self
         .row_indices
         .iter()

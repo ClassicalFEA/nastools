@@ -330,7 +330,7 @@ pub(crate) fn unspace(line: &str) -> Option<String> {
         // not spaced. but have we seen a lot?
         if cap > 20 {
           // we've seen enough, this is fine. drop the extra chars tho
-          stop_at = 0.max(stop_at - 2);
+          stop_at = stop_at.saturating_sub(2);
           break;
         } else {
           // nah, we've seen it too soon.
