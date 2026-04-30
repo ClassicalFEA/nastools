@@ -50,22 +50,32 @@ struct Cli {
   /// `to` is an inclusive range; `delta` is `[A - B, A + B]` (B >= 0).
   ///
   /// Prints PASS/FAIL/ERROR on stdout and the value (or error) on stderr.
-  /// Exit codes: 0 PASS, 1 FAIL, 2 extraction error, 3 spec parse error,
-  /// 4 F06 parse error.
+  /// Exit codes (oneliner): 0 PASS, 1 FAIL, 2 extraction error,
+  /// 3 spec parse error, 4 F06 parse error.
+  ///
+  /// Exit codes (script mode): number of failed checks/comparisons
+  /// (0 means all passed), or 255 (-1) on a general failure such as a
+  /// TOML parse error or F06 parse error.
   #[arg(long, value_name = "SPEC", conflicts_with = "indices")]
   oneliner: Option<String>,
 }
 
 /// Runs a script in a given path and outputs results.
-fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
+///
+/// Returns the number of failed checks/comparisons on success. A "fail" is
+/// any comparison whose flagged set is non-empty, plus each per-(file,
+/// extraction) check pair whose flagged set is non-empty.
+fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
   let contents = std::fs::read_to_string(path)?;
   let try_script: Result<Script, TomlError> = toml::from_str(&contents);
   let script = try_script?.prepare()?;
+  let mut fails: usize = 0;
   for comp in script.comparisons.keys() {
     let res = script.run_comparison(comp)?;
     let pass = if res.flagged.is_empty() {
       "PASSED"
     } else {
+      fails += 1;
       "FAILED"
     };
     println!("==> {comp}: {pass}");
@@ -79,6 +89,7 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
       let pass = if rp.flagged.is_empty() {
         "PASSED"
       } else {
+        fails += 1;
         "FAILED"
       };
       let a = rp.flagged.len();
@@ -92,7 +103,7 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<(), Box<dyn Error>> {
   if script.checks.is_empty() {
     println!("no checks in script");
   }
-  return Ok(());
+  return Ok(fails);
 }
 
 /// Prints the row/column index reference for one or all block types.
@@ -159,16 +170,22 @@ fn main() -> ExitCode {
     };
   }
   match cli.path {
-    Some(p) => {
-      if let Err(e) = run_script(p) {
-        eprintln!("{e}");
-        return ExitCode::from(1);
+    Some(p) => match run_script(p) {
+      Ok(fails) => {
+        // Exit code is the number of failures, capped at 254 so it does not
+        // collide with the general-failure code (255 / -1).
+        return ExitCode::from(fails.min(254) as u8);
       }
-    }
+      Err(e) => {
+        eprintln!("{e}");
+        // General failure: TOML parse error, F06 parse error, missing file,
+        // etc. Exits with -1 (255 as u8).
+        return ExitCode::from(255);
+      }
+    },
     None => {
       eprintln!("No script supplied!");
-      return ExitCode::from(1);
+      return ExitCode::from(255);
     }
   }
-  return ExitCode::SUCCESS;
 }
