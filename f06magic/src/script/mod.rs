@@ -13,7 +13,7 @@ use f06::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::script::check::{Check, CheckResult};
-use crate::script::comparison::{Comparison, ComparisonResult};
+use crate::script::comparison::{Comparison, ComparisonResult, FlaggedDetail};
 use crate::script::criteria::SimpleCriteria;
 use crate::script::errors::{
   CheckRunError, ComparisonRunError, ScriptValidationError,
@@ -163,12 +163,19 @@ impl ReadyScript {
       indices.extend(ex.lookup(ref_file));
       indices.extend(ex.lookup(test_file));
     }
-    let mut flagged: BTreeSet<DatumIndex> = BTreeSet::new();
+    let mut flagged: BTreeMap<DatumIndex, FlaggedDetail> = BTreeMap::new();
     for i in indices.iter() {
       let ref_val = i.get_from(ref_file).unwrap_or(F06Number::Real(0.0));
       let test_val = i.get_from(test_file).unwrap_or(F06Number::Real(0.0));
-      if criteria.check(ref_val.into(), test_val.into()).is_some() {
-        flagged.insert(*i);
+      if let Some(reason) = criteria.check(ref_val.into(), test_val.into()) {
+        flagged.insert(
+          *i,
+          FlaggedDetail {
+            ref_val,
+            test_val,
+            reason,
+          },
+        );
       }
     }
     return Ok(ComparisonResult {

@@ -1,16 +1,41 @@
 //! "One-liner" check mode for f06magic.
 //!
-//! Lets the user specify a single PASS/FAIL check on a single F06 file
-//! through one quoted CLI string instead of authoring a TOML script. Useful
-//! as a CI primitive.
+//! Lets the user specify a single PASS/FAIL check on an F06 file through
+//! one quoted CLI string instead of authoring a TOML script. Useful as a
+//! CI primitive.
 //!
 //! ## Spec format
 //!
-//! `subcase <N> <block> <row> <col> <A> <to|delta> <B>` (8 tokens)
+//! 8-token forms:
+//!
+//! ```text
+//! subcase <N> <block> <row> <col> <A> to     <B>
+//! subcase <N> <block> <row> <col> <A> delta  <B>
+//! subcase <N> <block> <row> <col> <A> percent <P>   (alias: pct)
+//! subcase <N> <block> <row> <col> <A> ±      <B>    (alias: +-)
+//! subcase <N> <block> <row> <col> <A> ±      <P>%   (alias: +-)
+//! ```
+//!
+//! 10-token form (`percent`/`pct` or `± ...%` with optional near-zero floor):
+//!
+//! ```text
+//! subcase <N> <block> <row> <col> <A> percent <P> floor <E>
+//! subcase <N> <block> <row> <col> <A> ±       <P>% floor <E>
+//! ```
 //!
 //! - `<A> to <B>`: inclusive range `[min(A,B), max(A,B)]`.
-//! - `<A> delta <B>`: inclusive symmetric range `[A - B, A + B]`; `B` must be
-//!   non-negative.
+//! - `<A> delta <B>`, `<A> ± <B>`: inclusive symmetric range
+//!   `[A - B, A + B]`; `B >= 0`.
+//! - `<A> percent <P>`, `<A> ± <P>%`: PASS iff `100*|test/A - 1| <= P`. `A`
+//!   is the reference value (so e.g. `... 10 percent 5` matches
+//!   `[9.5, 10.5]`). With `... floor <E>` appended: when both `|A|` and
+//!   `|test|` are below `E` the check passes; when exactly one is below it
+//!   fails; otherwise the percent formula applies. With no floor and
+//!   `A == 0` the check fails unless `test == 0`.
+//!
+//! `<N>`, `<row>`, and `<col>` may be comma-separated lists (no spaces);
+//! every combination in the cartesian product is evaluated. The numeric
+//! bounds (`A`, `B`, `P`, `E`) are always single values.
 //!
 //! On success the value is looked up by reusing the same machinery that
 //! powers TOML scripts ([`SimpleExtraction::resolve`] +
@@ -28,7 +53,7 @@ use crate::script::extraction::SimpleExtraction;
 use crate::script::index::LenientNasIndex;
 use crate::utils::{AnyAmount, NumListRange};
 
-/// The result of running a one-liner.
+/// The result of running a single one-liner cell.
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum OnelinerOutcome {
   /// The value was extracted and lies within the bounds.
@@ -54,6 +79,17 @@ pub(crate) enum Bounds {
     /// Tolerance (non-negative).
     tol: f64,
   },
+  /// `<A> percent <P>` with optional `floor <E>`. PASS iff
+  /// `100*|test/center - 1| <= tol_pct`, with the same three-case floor
+  /// logic as the libf06 `Criteria` percent check.
+  Percent {
+    /// Reference value (token `A`).
+    center: f64,
+    /// Percent tolerance (non-negative).
+    tol_pct: f64,
+    /// Optional near-zero floor (non-negative when `Some`).
+    floor: Option<f64>,
+  },
 }
 
 impl Bounds {
@@ -65,29 +101,92 @@ impl Bounds {
     return match *self {
       Bounds::Range { lo, hi } => lo <= value && value <= hi,
       Bounds::Delta { center, tol } => (value - center).abs() <= tol,
+      Bounds::Percent {
+        center,
+        tol_pct,
+        floor,
+      } => percent_pass(center, value, tol_pct, floor),
     };
   }
+}
+
+/// Implements the three-case percent + floor logic. `center` is the
+/// reference, `value` is the test value. Mirrors `Criteria::check`.
+fn percent_pass(
+  center: f64,
+  value: f64,
+  tol_pct: f64,
+  floor: Option<f64>,
+) -> bool {
+  let e = floor.unwrap_or(0.0);
+  let a_small = center.abs() < e;
+  let b_small = value.abs() < e;
+  if a_small && b_small {
+    return true;
+  }
+  if a_small != b_small {
+    return false;
+  }
+  let pct = if center == 0.0 {
+    if value == 0.0 { 0.0 } else { f64::INFINITY }
+  } else {
+    100.0 * (value / center - 1.0).abs()
+  };
+  return pct <= tol_pct;
 }
 
 /// A parsed one-liner spec, ready to be resolved against an F06 file.
 #[derive(Debug, Clone)]
 pub(crate) struct OnelinerSpec {
-  /// Subcase number.
-  pub(crate) subcase: usize,
+  /// Subcase numbers (cartesian-expanded).
+  pub(crate) subcases: Vec<usize>,
   /// Block type.
   pub(crate) block: BlockType,
-  /// Raw row token (resolved against `block` later).
-  pub(crate) row: String,
-  /// Raw column token (resolved against `block` later).
-  pub(crate) col: String,
+  /// Raw row tokens (cartesian-expanded; resolved per cell).
+  pub(crate) rows: Vec<String>,
+  /// Raw column tokens (cartesian-expanded; resolved per cell).
+  pub(crate) cols: Vec<String>,
   /// Bounds.
   pub(crate) bounds: Bounds,
+}
+
+impl OnelinerSpec {
+  /// Total number of (subcase, row, col) cells implied by this spec.
+  pub(crate) fn cell_count(&self) -> usize {
+    return self.subcases.len() * self.rows.len() * self.cols.len();
+  }
+}
+
+/// One cell of a one-liner run.
+#[derive(Debug)]
+pub(crate) struct CellResult {
+  /// Subcase for this cell.
+  pub(crate) subcase: usize,
+  /// Block type (same across all cells).
+  pub(crate) block: BlockType,
+  /// Raw row token for this cell.
+  pub(crate) row: String,
+  /// Raw column token for this cell.
+  pub(crate) col: String,
+  /// What happened.
+  pub(crate) outcome: CellOutcome,
+}
+
+/// Per-cell outcome of a one-liner run.
+#[derive(Debug)]
+pub(crate) enum CellOutcome {
+  /// Value resolved and bounds satisfied.
+  Pass(F06Number),
+  /// Value resolved but bounds violated (or value is NaN).
+  Fail(F06Number),
+  /// The cell could not be resolved/read at all.
+  Error(OnelinerError),
 }
 
 /// Errors raised when parsing or running a one-liner spec.
 #[derive(Debug)]
 pub(crate) enum OnelinerError {
-  /// The spec did not contain exactly eight whitespace-separated tokens.
+  /// The spec did not contain a supported number of tokens.
   BadTokenCount(usize),
   /// The first token was not the literal word `subcase`.
   BadSubcaseLiteral(String),
@@ -95,14 +194,27 @@ pub(crate) enum OnelinerError {
   BadSubcase(String),
   /// The block name could not be parsed.
   BadBlock(String, String),
-  /// The bounds operator (token 7) was not `to` or `delta`.
+  /// The bounds operator (token 7) was not `to`, `delta`, `percent`, or `pct`.
   BadOperator(String),
   /// `delta` was given a negative tolerance.
   NegativeDelta(f64),
+  /// `percent` was given a negative tolerance.
+  NegativePercent(f64),
+  /// `floor` was given a negative epsilon.
+  NegativeFloor(f64),
   /// One of the numeric bounds was NaN.
   NanBound,
   /// One of the numeric bounds could not be parsed as f64.
   BadBound(String, String),
+  /// Token 9 (in a 10-token spec) was not the literal `floor`.
+  BadFloorLiteral(String),
+  /// `floor` was used with an operator other than `percent`/`pct`.
+  FloorWithoutPercent(String),
+  /// One of the comma-separated lists was empty (e.g. "1,,2").
+  EmptyListEntry {
+    /// Which token had the empty entry.
+    field: &'static str,
+  },
   /// Validation of the row/col against the block's index types failed.
   Validation(ScriptValidationError),
   /// The F06 file could not be parsed.
@@ -129,8 +241,9 @@ impl Display for OnelinerError {
     return match self {
       Self::BadTokenCount(n) => write!(
         f,
-        "one-liner spec must have exactly 8 tokens (got {n}); \
-         expected: subcase <N> <block> <row> <col> <A> <to|delta> <B>",
+        "one-liner spec must have 8 or 10 tokens (got {n}); expected:\n  \
+         subcase <N> <block> <row> <col> <A> <to|delta|percent|pct> <B>\n  \
+         subcase <N> <block> <row> <col> <A> <percent|pct> <P> floor <E>",
       ),
       Self::BadSubcaseLiteral(t) => write!(
         f,
@@ -142,13 +255,31 @@ impl Display for OnelinerError {
       }
       Self::BadOperator(t) => write!(
         f,
-        "bounds operator must be \"to\" or \"delta\", got \"{t}\"",
+        "bounds operator must be \"to\", \"delta\", \"percent\", \"pct\", \
+         \"\u{00b1}\" or \"+-\", got \"{t}\"",
       ),
       Self::NegativeDelta(v) => {
         write!(f, "delta tolerance must be non-negative, got {v}")
       }
+      Self::NegativePercent(v) => {
+        write!(f, "percent tolerance must be non-negative, got {v}")
+      }
+      Self::NegativeFloor(v) => {
+        write!(f, "floor must be non-negative, got {v}")
+      }
       Self::NanBound => write!(f, "numeric bounds cannot be NaN"),
       Self::BadBound(t, why) => write!(f, "bad numeric bound \"{t}\": {why}"),
+      Self::BadFloorLiteral(t) => write!(
+        f,
+        "expected the literal \"floor\" before the epsilon, got \"{t}\"",
+      ),
+      Self::FloorWithoutPercent(op) => write!(
+        f,
+        "\"floor\" only applies to \"percent\"/\"pct\" (operator was \"{op}\")",
+      ),
+      Self::EmptyListEntry { field } => {
+        write!(f, "empty entry in comma-separated {field} list")
+      }
       Self::Validation(e) => write!(f, "{e}"),
       Self::Parser(e) => write!(f, "could not parse F06: {e}"),
       Self::Extraction(e) => write!(f, "could not read value: {e}"),
@@ -165,7 +296,7 @@ impl Display for OnelinerError {
       ),
       Self::Ambiguous(n) => write!(
         f,
-        "one-liner expects a single value but {n} matched; \
+        "one-liner expects a single value per cell but {n} matched; \
          narrow the spec",
       ),
     };
@@ -174,24 +305,47 @@ impl Display for OnelinerError {
 
 impl Error for OnelinerError {}
 
+/// Splits a comma-separated token, trimming whitespace and rejecting empty
+/// entries. A token with no commas yields a single-element vector.
+fn split_csv(
+  token: &str,
+  field: &'static str,
+) -> Result<Vec<String>, OnelinerError> {
+  let mut out = Vec::new();
+  for piece in token.split(',') {
+    let trimmed = piece.trim();
+    if trimmed.is_empty() {
+      return Err(OnelinerError::EmptyListEntry { field });
+    }
+    out.push(trimmed.to_owned());
+  }
+  return Ok(out);
+}
+
 /// Parses the one-liner spec string.
 pub(crate) fn parse_oneliner(
   spec: &str,
 ) -> Result<OnelinerSpec, OnelinerError> {
   let tokens: Vec<&str> = spec.split_ascii_whitespace().collect();
-  if tokens.len() != 8 {
+  if tokens.len() != 8 && tokens.len() != 10 {
     return Err(OnelinerError::BadTokenCount(tokens.len()));
   }
   if !tokens[0].eq_ignore_ascii_case("subcase") {
     return Err(OnelinerError::BadSubcaseLiteral(tokens[0].to_owned()));
   }
-  let subcase: usize = tokens[1]
-    .parse()
-    .map_err(|_| OnelinerError::BadSubcase(tokens[1].to_owned()))?;
+  // Subcases (token 1): may be comma-separated.
+  let subcase_pieces = split_csv(tokens[1], "subcase")?;
+  let mut subcases: Vec<usize> = Vec::with_capacity(subcase_pieces.len());
+  for piece in &subcase_pieces {
+    let n: usize = piece
+      .parse()
+      .map_err(|_| OnelinerError::BadSubcase(piece.clone()))?;
+    subcases.push(n);
+  }
   let block = BlockType::from_str(tokens[2])
     .map_err(|why| OnelinerError::BadBlock(tokens[2].to_owned(), why))?;
-  let row = tokens[3].to_owned();
-  let col = tokens[4].to_owned();
+  let rows = split_csv(tokens[3], "row")?;
+  let cols = split_csv(tokens[4], "col")?;
   let parse_f64 = |s: &str| -> Result<f64, OnelinerError> {
     let v: f64 = s.parse().map_err(|e: std::num::ParseFloatError| {
       OnelinerError::BadBound(s.to_owned(), e.to_string())
@@ -202,38 +356,80 @@ pub(crate) fn parse_oneliner(
     return Ok(v);
   };
   let a = parse_f64(tokens[5])?;
-  let b = parse_f64(tokens[7])?;
-  let bounds = if tokens[6].eq_ignore_ascii_case("to") {
+  let op = tokens[6];
+  let is_pm = op == "\u{00b1}" || op == "+-";
+  let is_percent_kw =
+    op.eq_ignore_ascii_case("percent") || op.eq_ignore_ascii_case("pct");
+  // `±` picks delta vs percent by the trailing `%` on the B token. For
+  // `percent`/`pct` the B token is bare. For other operators we use the
+  // raw B token as-is and the trailing-% check is irrelevant.
+  let (b_token, pm_is_percent) = if is_pm {
+    match tokens[7].strip_suffix('%') {
+      Some(rest) => (rest, true),
+      None => (tokens[7], false),
+    }
+  } else {
+    (tokens[7], false)
+  };
+  let b = parse_f64(b_token)?;
+  let is_percent = is_percent_kw || pm_is_percent;
+  // 10-token form is only valid for percent semantics.
+  if tokens.len() == 10 && !is_percent {
+    return Err(OnelinerError::FloorWithoutPercent(op.to_owned()));
+  }
+  let floor = if tokens.len() == 10 {
+    if !tokens[8].eq_ignore_ascii_case("floor") {
+      return Err(OnelinerError::BadFloorLiteral(tokens[8].to_owned()));
+    }
+    let e = parse_f64(tokens[9])?;
+    if e < 0.0 {
+      return Err(OnelinerError::NegativeFloor(e));
+    }
+    Some(e)
+  } else {
+    None
+  };
+  let bounds = if op.eq_ignore_ascii_case("to") {
     let (lo, hi) = if a <= b { (a, b) } else { (b, a) };
     Bounds::Range { lo, hi }
-  } else if tokens[6].eq_ignore_ascii_case("delta") {
+  } else if op.eq_ignore_ascii_case("delta") || (is_pm && !pm_is_percent) {
     if b < 0.0 {
       return Err(OnelinerError::NegativeDelta(b));
     }
     Bounds::Delta { center: a, tol: b }
+  } else if is_percent {
+    if b < 0.0 {
+      return Err(OnelinerError::NegativePercent(b));
+    }
+    Bounds::Percent {
+      center: a,
+      tol_pct: b,
+      floor,
+    }
   } else {
-    return Err(OnelinerError::BadOperator(tokens[6].to_owned()));
+    return Err(OnelinerError::BadOperator(op.to_owned()));
   };
   return Ok(OnelinerSpec {
-    subcase,
+    subcases,
     block,
-    row,
-    col,
+    rows,
+    cols,
     bounds,
   });
 }
 
-/// Builds a single-value [`SimpleExtraction`] from a one-liner spec, with the
-/// caller-chosen row/col tokens.
+/// Builds a single-value [`SimpleExtraction`] for a single (subcase, row,
+/// col) cell.
 fn make_extraction(
-  spec: &OnelinerSpec,
+  block: BlockType,
+  subcase: usize,
   row: &str,
   col: &str,
 ) -> SimpleExtraction {
   return SimpleExtraction {
     name: "oneliner".to_owned(),
-    blocks: AnyAmount::One(spec.block),
-    subcases: NumListRange::Single(spec.subcase),
+    blocks: AnyAmount::One(block),
+    subcases: NumListRange::Single(subcase),
     nodes: NumListRange::None,
     elements: NumListRange::None,
     element_types: AnyAmount::None,
@@ -248,43 +444,44 @@ fn make_extraction(
   };
 }
 
-/// Resolves a one-liner spec into a real [`Extraction`].
+/// Resolves the row/col tokens for one cell into a real [`Extraction`].
 ///
 /// On any row/col validation failure we transparently retry once with the
 /// row and column tokens swapped, so the user does not have to memorise
 /// per-block orientation. If the retry also fails we surface the *original*
 /// error so the diagnostic reflects what the user actually typed.
-fn resolve_extraction(
-  spec: &OnelinerSpec,
+fn resolve_cell_extraction(
+  block: BlockType,
+  subcase: usize,
+  row: &str,
+  col: &str,
 ) -> Result<Extraction, OnelinerError> {
-  let first = make_extraction(spec, &spec.row, &spec.col).resolve();
+  let first = make_extraction(block, subcase, row, col).resolve();
   return match first {
     Ok(e) => Ok(e),
-    Err(err) => match make_extraction(spec, &spec.col, &spec.row).resolve() {
+    Err(err) => match make_extraction(block, subcase, col, row).resolve() {
       Ok(e) => Ok(e),
       Err(_) => Err(OnelinerError::Validation(err)),
     },
   };
 }
 
-/// Runs a parsed one-liner against an F06 file at `path`.
-///
-/// Returns `Ok(Pass)` / `Ok(Fail)` on a successful extraction. The resolved
-/// numeric value is written to `stderr_value` for the caller to print on
-/// stderr; on PASS/FAIL the caller is expected to print exactly one of
-/// `PASS` / `FAIL` to stdout.
-pub(crate) fn run_oneliner<P: AsRef<Path>>(
-  spec: &OnelinerSpec,
-  path: P,
+/// Evaluates one (subcase, row, col) cell against an already-parsed F06.
+fn run_cell(
+  f06: &F06File,
+  block: BlockType,
+  subcase: usize,
+  row: &str,
+  col: &str,
+  bounds: &Bounds,
 ) -> Result<(OnelinerOutcome, F06Number), OnelinerError> {
-  let extraction = resolve_extraction(spec)?;
-  let f06 = OnePassParser::parse_file(path).map_err(OnelinerError::Parser)?;
-  let mut hits = extraction.lookup(&f06);
+  let extraction = resolve_cell_extraction(block, subcase, row, col)?;
+  let mut hits = extraction.lookup(f06);
   let first = hits.next().ok_or_else(|| OnelinerError::NoMatch {
-    subcase: spec.subcase,
-    block: spec.block,
-    row: spec.row.clone(),
-    col: spec.col.clone(),
+    subcase,
+    block,
+    row: row.to_owned(),
+    col: col.to_owned(),
   })?;
   // Count the rest to detect ambiguity, but cap so a pathological extraction
   // does not iterate forever in degenerate cases.
@@ -292,13 +489,47 @@ pub(crate) fn run_oneliner<P: AsRef<Path>>(
   if extra > 0 {
     return Err(OnelinerError::Ambiguous(1 + extra));
   }
-  let value = first.get_from(&f06).map_err(OnelinerError::Extraction)?;
-  let outcome = if spec.bounds.contains(value.into()) {
+  let value = first.get_from(f06).map_err(OnelinerError::Extraction)?;
+  let outcome = if bounds.contains(value.into()) {
     OnelinerOutcome::Pass
   } else {
     OnelinerOutcome::Fail
   };
   return Ok((outcome, value));
+}
+
+/// Runs a parsed one-liner against an F06 file at `path`.
+///
+/// Parses the F06 once, then iterates the cartesian product of
+/// `subcases x rows x cols` and returns one [`CellResult`] per cell. Only
+/// truly global errors (F06 parsing) propagate via `Err`; per-cell failures
+/// to resolve/look up are captured in [`CellOutcome::Error`].
+pub(crate) fn run_oneliner<P: AsRef<Path>>(
+  spec: &OnelinerSpec,
+  path: P,
+) -> Result<Vec<CellResult>, OnelinerError> {
+  let f06 = OnePassParser::parse_file(path).map_err(OnelinerError::Parser)?;
+  let mut results = Vec::with_capacity(spec.cell_count());
+  for &subcase in &spec.subcases {
+    for row in &spec.rows {
+      for col in &spec.cols {
+        let outcome =
+          match run_cell(&f06, spec.block, subcase, row, col, &spec.bounds) {
+            Ok((OnelinerOutcome::Pass, v)) => CellOutcome::Pass(v),
+            Ok((OnelinerOutcome::Fail, v)) => CellOutcome::Fail(v),
+            Err(e) => CellOutcome::Error(e),
+          };
+        results.push(CellResult {
+          subcase,
+          block: spec.block,
+          row: row.clone(),
+          col: col.clone(),
+          outcome,
+        });
+      }
+    }
+  }
+  return Ok(results);
 }
 
 /// Exit code for an [`OnelinerError`], following the contract documented on
@@ -311,8 +542,13 @@ pub(crate) fn error_exit_code(err: &OnelinerError) -> i32 {
     | OnelinerError::BadBlock(_, _)
     | OnelinerError::BadOperator(_)
     | OnelinerError::NegativeDelta(_)
+    | OnelinerError::NegativePercent(_)
+    | OnelinerError::NegativeFloor(_)
     | OnelinerError::NanBound
     | OnelinerError::BadBound(_, _)
+    | OnelinerError::BadFloorLiteral(_)
+    | OnelinerError::FloorWithoutPercent(_)
+    | OnelinerError::EmptyListEntry { .. }
     | OnelinerError::Validation(_) => 3,
     OnelinerError::Parser(_) => 4,
     OnelinerError::Extraction(_)
@@ -329,9 +565,9 @@ mod tests {
   fn parses_range_form() {
     let s =
       parse_oneliner("subcase 1 displacements grid_1 tx -1.0 to 1.0").unwrap();
-    assert_eq!(s.subcase, 1);
-    assert_eq!(s.row, "grid_1");
-    assert_eq!(s.col, "tx");
+    assert_eq!(s.subcases, vec![1]);
+    assert_eq!(s.rows, vec!["grid_1".to_owned()]);
+    assert_eq!(s.cols, vec!["tx".to_owned()]);
     assert_eq!(s.bounds, Bounds::Range { lo: -1.0, hi: 1.0 });
   }
 
@@ -370,6 +606,12 @@ mod tests {
     assert!(matches!(
       parse_oneliner("subcase 1 displacements grid_1 tx 0 to 1 extra"),
       Err(OnelinerError::BadTokenCount(9)),
+    ));
+    assert!(matches!(
+      parse_oneliner(
+        "subcase 1 displacements grid_1 tx 0 percent 5 floor 1e-6 extra",
+      ),
+      Err(OnelinerError::BadTokenCount(11)),
     ));
   }
 
@@ -446,5 +688,207 @@ mod tests {
     assert!(d.contains(10.5));
     assert!(!d.contains(10.501));
     assert!(!d.contains(f64::NAN));
+  }
+
+  #[test]
+  fn parses_percent_form() {
+    let s =
+      parse_oneliner("subcase 1 displacements grid_1 tx 10 percent 5").unwrap();
+    assert_eq!(
+      s.bounds,
+      Bounds::Percent {
+        center: 10.0,
+        tol_pct: 5.0,
+        floor: None,
+      },
+    );
+  }
+
+  #[test]
+  fn pct_is_alias_of_percent() {
+    let s =
+      parse_oneliner("subcase 1 displacements grid_1 tx 10 pct 5").unwrap();
+    assert!(matches!(s.bounds, Bounds::Percent { floor: None, .. }));
+  }
+
+  #[test]
+  fn parses_percent_with_floor() {
+    let s = parse_oneliner(
+      "subcase 1 displacements grid_1 tx 10 percent 5 floor 1e-6",
+    )
+    .unwrap();
+    assert_eq!(
+      s.bounds,
+      Bounds::Percent {
+        center: 10.0,
+        tol_pct: 5.0,
+        floor: Some(1e-6),
+      },
+    );
+  }
+
+  #[test]
+  fn rejects_negative_percent() {
+    assert!(matches!(
+      parse_oneliner("subcase 1 displacements grid_1 tx 10 percent -1"),
+      Err(OnelinerError::NegativePercent(_)),
+    ));
+  }
+
+  #[test]
+  fn rejects_negative_floor() {
+    assert!(matches!(
+      parse_oneliner(
+        "subcase 1 displacements grid_1 tx 10 percent 5 floor -1e-9",
+      ),
+      Err(OnelinerError::NegativeFloor(_)),
+    ));
+  }
+
+  #[test]
+  fn rejects_bad_floor_literal() {
+    assert!(matches!(
+      parse_oneliner(
+        "subcase 1 displacements grid_1 tx 10 percent 5 epsilon 1e-9",
+      ),
+      Err(OnelinerError::BadFloorLiteral(_)),
+    ));
+  }
+
+  #[test]
+  fn floor_only_for_percent() {
+    assert!(matches!(
+      parse_oneliner("subcase 1 displacements grid_1 tx 0 to 1 floor 1e-9",),
+      Err(OnelinerError::FloorWithoutPercent(_)),
+    ));
+  }
+
+  #[test]
+  fn percent_bounds_floor_three_cases() {
+    let b = Bounds::Percent {
+      center: 0.0,
+      tol_pct: 5.0,
+      floor: Some(1e-6),
+    };
+    // Both below floor -> pass.
+    assert!(b.contains(0.0));
+    assert!(b.contains(1e-9));
+    // Asymmetric -> fail.
+    assert!(!b.contains(1.0));
+    let b2 = Bounds::Percent {
+      center: 10.0,
+      tol_pct: 5.0,
+      floor: Some(1e-6),
+    };
+    // Above floor on both sides -> percent formula.
+    assert!(b2.contains(10.4));
+    assert!(b2.contains(9.6));
+    assert!(!b2.contains(11.0));
+    // Asymmetric (ref above, test below floor) -> fail.
+    assert!(!b2.contains(1e-9));
+  }
+
+  #[test]
+  fn percent_no_floor_zero_ref() {
+    let b = Bounds::Percent {
+      center: 0.0,
+      tol_pct: 5.0,
+      floor: None,
+    };
+    assert!(b.contains(0.0));
+    assert!(!b.contains(1e-300));
+  }
+
+  #[test]
+  fn parses_comma_separated_lists() {
+    let s =
+      parse_oneliner("subcase 1,2,3 displacements 11,12 tx,ty 0 to 1").unwrap();
+    assert_eq!(s.subcases, vec![1, 2, 3]);
+    assert_eq!(s.rows, vec!["11".to_owned(), "12".to_owned()]);
+    assert_eq!(s.cols, vec!["tx".to_owned(), "ty".to_owned()]);
+    assert_eq!(s.cell_count(), 12);
+  }
+
+  #[test]
+  fn rejects_empty_csv_entry() {
+    assert!(matches!(
+      parse_oneliner("subcase 1,,2 displacements grid_1 tx 0 to 1"),
+      Err(OnelinerError::EmptyListEntry { field: "subcase" }),
+    ));
+  }
+
+  #[test]
+  fn parses_plus_minus_delta() {
+    let s = parse_oneliner("subcase 1 displacements grid_1 tx 10 \u{00b1} 0.5")
+      .unwrap();
+    assert_eq!(
+      s.bounds,
+      Bounds::Delta {
+        center: 10.0,
+        tol: 0.5,
+      },
+    );
+  }
+
+  #[test]
+  fn parses_plus_minus_ascii_alias_delta() {
+    let s =
+      parse_oneliner("subcase 1 displacements grid_1 tx 10 +- 0.5").unwrap();
+    assert!(matches!(s.bounds, Bounds::Delta { .. }));
+  }
+
+  #[test]
+  fn parses_plus_minus_percent() {
+    let s = parse_oneliner("subcase 1 displacements grid_1 tx 10 \u{00b1} 5%")
+      .unwrap();
+    assert_eq!(
+      s.bounds,
+      Bounds::Percent {
+        center: 10.0,
+        tol_pct: 5.0,
+        floor: None,
+      },
+    );
+  }
+
+  #[test]
+  fn parses_plus_minus_percent_with_floor() {
+    let s =
+      parse_oneliner("subcase 1 displacements grid_1 tx 10 +- 5% floor 1e-6")
+        .unwrap();
+    assert_eq!(
+      s.bounds,
+      Bounds::Percent {
+        center: 10.0,
+        tol_pct: 5.0,
+        floor: Some(1e-6),
+      },
+    );
+  }
+
+  #[test]
+  fn plus_minus_delta_rejects_floor() {
+    assert!(matches!(
+      parse_oneliner(
+        "subcase 1 displacements grid_1 tx 10 \u{00b1} 0.5 floor 1e-6",
+      ),
+      Err(OnelinerError::FloorWithoutPercent(_)),
+    ));
+  }
+
+  #[test]
+  fn plus_minus_negative_delta_rejected() {
+    assert!(matches!(
+      parse_oneliner("subcase 1 displacements grid_1 tx 10 \u{00b1} -0.5"),
+      Err(OnelinerError::NegativeDelta(_)),
+    ));
+  }
+
+  #[test]
+  fn plus_minus_negative_percent_rejected() {
+    assert!(matches!(
+      parse_oneliner("subcase 1 displacements grid_1 tx 10 \u{00b1} -5%"),
+      Err(OnelinerError::NegativePercent(_)),
+    ));
   }
 }

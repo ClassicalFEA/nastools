@@ -161,6 +161,16 @@ pub struct Criteria {
   /// Test a big-to-small ratio?
   #[arg(long, short = 'r')]
   pub ratio: Option<f64>,
+  /// Test a relative-percent error `100*|test/ref - 1|` against this
+  /// tolerance? `a` (first argument to [`Criteria::check`]) is the reference.
+  #[arg(long, short = 'p')]
+  pub percent: Option<f64>,
+  /// Optional near-zero floor that gates the percent check. When both
+  /// `|ref|` and `|test|` are below this value the percent check passes;
+  /// when exactly one is below, the pair is flagged as a floor asymmetry.
+  /// Ignored unless `percent` is also set. `None` is treated as `0.0`.
+  #[arg(long)]
+  pub percent_floor: Option<f64>,
   /// Check for NaNs?
   #[arg(long)]
   pub nan: bool,
@@ -177,6 +187,8 @@ impl Default for Criteria {
     return Self {
       difference: None,
       ratio: None,
+      percent: None,
+      percent_floor: None,
       nan: true,
       inf: true,
       sig: false,
@@ -220,6 +232,46 @@ impl Criteria {
         });
       }
     }
+    // check percent (relative error). `a` is the reference, `b` is the
+    // test value. The optional floor declares a noise band: when both
+    // sides are inside it the pair is treated as agreeing; when exactly
+    // one side is inside it the pair is flagged as a floor asymmetry;
+    // when both are outside it the percent formula is applied normally.
+    if let Some(max_percent) = self.percent {
+      let floor = self.percent_floor.unwrap_or(0.0);
+      let ar = a.abs();
+      let br = b.abs();
+      let a_small = ar < floor;
+      let b_small = br < floor;
+      if a_small && b_small {
+        // both in the noise band: pass.
+      } else if a_small != b_small {
+        return Some(FlagReason::FloorAsymmetry {
+          ref_val: a,
+          test_val: b,
+          floor,
+        });
+      } else {
+        // both above floor (or floor unset): apply the formula. If `a`
+        // is exactly zero the relative error is undefined; treat it as
+        // `+inf` so the pair fails unless `b` is also zero.
+        let pct = if a == 0.0 {
+          if b == 0.0 {
+            0.0
+          } else {
+            f64::INFINITY
+          }
+        } else {
+          100.0 * (b / a - 1.0).abs()
+        };
+        if pct > max_percent {
+          return Some(FlagReason::Percent {
+            percent: pct,
+            max_percent,
+          });
+        }
+      }
+    }
     // nothing? no flag
     return None;
   }
@@ -255,6 +307,24 @@ pub enum FlagReason {
     /// The max ratio exceeded.
     max_ratio: f64,
   },
+  /// Flagged due to an exceeded relative-percent error.
+  Percent {
+    /// The computed percent error `100*|test/ref - 1|`.
+    percent: f64,
+    /// The exceeded percent tolerance.
+    max_percent: f64,
+  },
+  /// Flagged because exactly one of the two values was below the
+  /// percent-check floor (i.e. one side is in the noise band, the other
+  /// isn't).
+  FloorAsymmetry {
+    /// The reference value.
+    ref_val: f64,
+    /// The test value.
+    test_val: f64,
+    /// The floor (epsilon) that gated the check.
+    floor: f64,
+  },
   /// Flagged due to being a NaN.
   NaN,
   /// Flagged due to there being an infinity.
@@ -273,6 +343,9 @@ impl Display for FlagReason {
       match self {
         FlagReason::Difference { .. } => "maximum difference exceeded",
         FlagReason::Ratio { .. } => "maximum ratio exceeded",
+        FlagReason::Percent { .. } => "maximum percent error exceeded",
+        FlagReason::FloorAsymmetry { .. } =>
+          "one value inside near-zero floor, the other outside",
         FlagReason::NaN => "NaN detected",
         FlagReason::Infinity => "infinity detected",
         FlagReason::Signs => "signs differ",

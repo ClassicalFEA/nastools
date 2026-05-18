@@ -34,13 +34,58 @@ pub(crate) struct Check {
   pub(crate) ranges: Option<Vec<(f64, f64)>>,
 }
 
+/// Which check rule caused a value to be flagged, plus the relevant
+/// expected/limit values for human-readable reporting.
+#[derive(Clone, Debug)]
+pub(crate) enum CheckRule {
+  /// `all_equal` rule: every value must equal `expected`.
+  AllEqual {
+    /// The expected value.
+    expected: f64,
+  },
+  /// `all_in_range` rule: every value must lie within `[lo, hi]`.
+  AllInRange {
+    /// Inclusive lower bound.
+    lo: f64,
+    /// Inclusive upper bound.
+    hi: f64,
+  },
+  /// Positional `exact_values[idx]`: value at this position must equal
+  /// `expected`.
+  ExactValues {
+    /// 0-based position in the extraction sequence.
+    idx: usize,
+    /// The expected value at this position.
+    expected: f64,
+  },
+  /// Positional `ranges[idx]`: value at this position must lie within
+  /// `[lo, hi]`.
+  Ranges {
+    /// 0-based position in the extraction sequence.
+    idx: usize,
+    /// Inclusive lower bound.
+    lo: f64,
+    /// Inclusive upper bound.
+    hi: f64,
+  },
+}
+
+/// Detail of a single flagged datum within a check.
+#[derive(Clone, Debug)]
+pub(crate) struct CheckFailure {
+  /// The value read from the F06.
+  pub(crate) value: F06Number,
+  /// The rule that flagged the value.
+  pub(crate) rule: CheckRule,
+}
+
 /// The results from a check run for one F06/extraction.
 #[derive(Clone, Default, Debug)]
 pub(crate) struct PartialCheckResult {
   /// Indices checked.
   pub(crate) checked: BTreeSet<DatumIndex>,
-  /// Indices flagged.
-  pub(crate) flagged: BTreeSet<DatumIndex>,
+  /// Indices flagged, mapped to per-datum detail.
+  pub(crate) flagged: BTreeMap<DatumIndex, CheckFailure>,
 }
 
 /// The full results from a check.
@@ -60,28 +105,61 @@ impl Check {
     for (i, (di, x_tmp)) in numbers.into_iter().enumerate() {
       let x: f64 = x_tmp.into();
       results.checked.insert(di);
-      if self.all_equal.is_some_and(|y| x != y) {
-        results.flagged.insert(di);
-        continue;
-      }
-      if self.all_in_range.is_some_and(|(a, b)| x < a || x > b) {
-        results.flagged.insert(di);
-        continue;
-      }
-      if self
-        .exact_values
-        .as_ref()
-        .is_some_and(|v| v.get(i).is_some_and(|y| x != *y))
+      if let Some(y) = self.all_equal
+        && x != y
       {
-        results.flagged.insert(di);
+        results.flagged.insert(
+          di,
+          CheckFailure {
+            value: x_tmp,
+            rule: CheckRule::AllEqual { expected: y },
+          },
+        );
         continue;
       }
-      if self
-        .ranges
-        .as_ref()
-        .is_some_and(|v| v.get(i).is_some_and(|(a, b)| x < *a || x > *b))
+      if let Some((a, b)) = self.all_in_range
+        && (x < a || x > b)
       {
-        results.flagged.insert(di);
+        results.flagged.insert(
+          di,
+          CheckFailure {
+            value: x_tmp,
+            rule: CheckRule::AllInRange { lo: a, hi: b },
+          },
+        );
+        continue;
+      }
+      if let Some(v) = self.exact_values.as_ref()
+        && let Some(y) = v.get(i)
+        && x != *y
+      {
+        results.flagged.insert(
+          di,
+          CheckFailure {
+            value: x_tmp,
+            rule: CheckRule::ExactValues {
+              idx: i,
+              expected: *y,
+            },
+          },
+        );
+        continue;
+      }
+      if let Some(v) = self.ranges.as_ref()
+        && let Some((a, b)) = v.get(i)
+        && (x < *a || x > *b)
+      {
+        results.flagged.insert(
+          di,
+          CheckFailure {
+            value: x_tmp,
+            rule: CheckRule::Ranges {
+              idx: i,
+              lo: *a,
+              hi: *b,
+            },
+          },
+        );
         continue;
       }
     }

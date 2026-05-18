@@ -1,8 +1,8 @@
 //! This simple submodule implements cross-F06 comparison.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
-use f06::prelude::DatumIndex;
+use f06::prelude::{DatumIndex, F06Number, FlagReason};
 use serde::{Deserialize, Serialize};
 
 use crate::utils::OneOrMany;
@@ -24,10 +24,21 @@ pub(crate) struct Comparison {
   pub(crate) criteria: String,
 }
 
+/// Details of a single flagged datum within a comparison.
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct FlaggedDetail {
+  /// Value read from the reference file.
+  pub(crate) ref_val: F06Number,
+  /// Value read from the test file.
+  pub(crate) test_val: F06Number,
+  /// Why the criteria flagged the pair.
+  pub(crate) reason: FlagReason,
+}
+
 /// The results from a run.
 pub(crate) struct ComparisonResult {
   /// Indices checked.
   pub(crate) checked: BTreeSet<DatumIndex>,
-  /// Indices flagged.
-  pub(crate) flagged: BTreeSet<DatumIndex>,
+  /// Indices flagged, mapped to per-datum detail.
+  pub(crate) flagged: BTreeMap<DatumIndex, FlaggedDetail>,
 }

@@ -21,9 +21,11 @@ use f06::prelude::*;
 use toml::de::Error as TomlError;
 
 use crate::oneliner::{
-  OnelinerOutcome, error_exit_code, parse_oneliner, run_oneliner,
+  CellOutcome, CellResult, error_exit_code, parse_oneliner, run_oneliner,
 };
 use crate::script::Script;
+use crate::script::check::{CheckFailure, CheckRule};
+use crate::script::comparison::FlaggedDetail;
 
 /// f06magic command-line interface.
 #[derive(Parser, Debug)]
@@ -59,13 +61,20 @@ struct Cli {
   /// error.
   #[arg(long, value_name = "SPEC", conflicts_with = "indices")]
   oneliner: Option<String>,
+  /// Show one line per flagged datum on stderr (both script and oneliner
+  /// modes). The stdout summary is unchanged.
+  #[arg(long, short = 'v')]
+  verbose: bool,
 }
 
 /// Runs a script in a given path and outputs results.
 ///
 /// Returns the total number of flagged values across all comparisons and
 /// checks (0 when everything passed).
-fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
+fn run_script<P: AsRef<Path>>(
+  path: P,
+  verbose: bool,
+) -> Result<usize, Box<dyn Error>> {
   let contents = std::fs::read_to_string(path)?;
   let try_script: Result<Script, TomlError> = toml::from_str(&contents);
   let script = try_script?.prepare()?;
@@ -81,6 +90,11 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
     println!("==> {comp}: {pass}");
     println!("  => checked: {}", res.checked.len());
     println!("  => flagged: {}", res.flagged.len());
+    if verbose {
+      for (di, det) in res.flagged.iter() {
+        eprintln!("  - {}", fmt_comparison_failure(di, det));
+      }
+    }
   }
   for ck in script.checks.keys() {
     let res = script.run_check(ck)?;
@@ -94,7 +108,12 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
       let a = rp.flagged.len();
       let b = rp.checked.len();
       flagged_total += a;
-      println!("  => {f}, {ex}: {pass} ({a}/{b} flagged)")
+      println!("  => {f}, {ex}: {pass} ({a}/{b} flagged)");
+      if verbose {
+        for (di, fail) in rp.flagged.iter() {
+          eprintln!("  - {}", fmt_check_failure(di, fail));
+        }
+      }
     }
   }
   if script.comparisons.is_empty() {
@@ -104,6 +123,149 @@ fn run_script<P: AsRef<Path>>(path: P) -> Result<usize, Box<dyn Error>> {
     println!("no checks in script");
   }
   return Ok(flagged_total);
+}
+
+/// Formats a flagged comparison datum as a single verbose line.
+fn fmt_comparison_failure(di: &DatumIndex, det: &FlaggedDetail) -> String {
+  return format!(
+    "subcase={} block={} row={} col={}: ref={} test={}  [{}]",
+    di.block_ref.subcase,
+    di.block_ref.block_type.short_name(),
+    di.row,
+    di.col,
+    det.ref_val,
+    det.test_val,
+    fmt_reason(&det.reason),
+  );
+}
+
+/// Formats a [`FlagReason`] into its bracketed metric, e.g.
+/// `difference=1.0e-3 > 1.0e-6` or `percent=5.2 > 1.0`.
+fn fmt_reason(reason: &FlagReason) -> String {
+  return match reason {
+    FlagReason::Difference {
+      abs_difference,
+      max_epsilon,
+    } => format!("difference={abs_difference} > {max_epsilon}"),
+    FlagReason::Ratio {
+      big_to_small,
+      max_ratio,
+    } => format!("ratio={big_to_small} > {max_ratio}"),
+    FlagReason::Percent {
+      percent,
+      max_percent,
+    } => format!("percent={percent} > {max_percent}"),
+    FlagReason::FloorAsymmetry {
+      ref_val,
+      test_val,
+      floor,
+    } => {
+      format!("floor_asymmetry: ref={ref_val} test={test_val} floor={floor}")
+    }
+    FlagReason::NaN => "nan".to_owned(),
+    FlagReason::Infinity => "inf".to_owned(),
+    FlagReason::Signs => "signs differ".to_owned(),
+    FlagReason::Disjunction => "missing in one file".to_owned(),
+  };
+}
+
+/// Formats a flagged check datum as a single verbose line.
+fn fmt_check_failure(di: &DatumIndex, fail: &CheckFailure) -> String {
+  let rule = match &fail.rule {
+    CheckRule::AllEqual { expected } => {
+      format!("all_equal: expected {expected}")
+    }
+    CheckRule::AllInRange { lo, hi } => {
+      format!("all_in_range: outside [{lo}, {hi}]")
+    }
+    CheckRule::ExactValues { idx, expected } => {
+      format!("exact_values[{idx}]: expected {expected}")
+    }
+    CheckRule::Ranges { idx, lo, hi } => {
+      format!("ranges[{idx}]: outside [{lo}, {hi}]")
+    }
+  };
+  return format!(
+    "subcase={} block={} row={} col={}: value={}  [{rule}]",
+    di.block_ref.subcase,
+    di.block_ref.block_type.short_name(),
+    di.row,
+    di.col,
+    fail.value,
+  );
+}
+
+/// Reports the outcome of a one-liner run on stdout/stderr and computes
+/// the process exit code.
+///
+/// Single-cell runs preserve the legacy contract byte-for-byte: the value
+/// (or per-cell error) goes to stderr and exactly one of `PASS`/`FAIL`/
+/// `ERROR` goes to stdout. Multi-cell runs print the same single-token
+/// stdout (`PASS` iff all cells pass, otherwise `FAIL`), an aggregate
+/// `flagged=<k>/<n>` line on stderr, and -- with `--verbose` -- one line
+/// per cell on stderr.
+fn report_oneliner(cells: &[CellResult], verbose: bool) -> ExitCode {
+  if cells.len() == 1 {
+    let c = &cells[0];
+    return match &c.outcome {
+      CellOutcome::Pass(v) => {
+        eprintln!("{v}");
+        println!("PASS");
+        ExitCode::SUCCESS
+      }
+      CellOutcome::Fail(v) => {
+        eprintln!("{v}");
+        println!("FAIL");
+        ExitCode::from(1)
+      }
+      CellOutcome::Error(e) => {
+        eprintln!("{e}");
+        println!("ERROR");
+        ExitCode::from(error_exit_code(e) as u8)
+      }
+    };
+  }
+  // Multi-cell.
+  let mut failed = 0usize;
+  let mut errored = 0usize;
+  for c in cells {
+    match &c.outcome {
+      CellOutcome::Pass(_) => {}
+      CellOutcome::Fail(_) => failed += 1,
+      CellOutcome::Error(_) => errored += 1,
+    }
+    if verbose {
+      eprintln!("  - {}", fmt_oneliner_cell(c));
+    }
+  }
+  let total = cells.len();
+  let flagged = failed + errored;
+  eprintln!("flagged={flagged}/{total}");
+  if flagged == 0 {
+    println!("PASS");
+    return ExitCode::SUCCESS;
+  }
+  println!("FAIL");
+  if errored > 0 {
+    return ExitCode::from(2);
+  }
+  return ExitCode::from(failed.min(254) as u8);
+}
+
+/// Formats one [`CellResult`] as a single verbose stderr line.
+fn fmt_oneliner_cell(c: &CellResult) -> String {
+  let header = format!(
+    "subcase={} block={} row={} col={}",
+    c.subcase,
+    c.block.short_name(),
+    c.row,
+    c.col,
+  );
+  return match &c.outcome {
+    CellOutcome::Pass(v) => format!("{header} value={v} verdict=PASS"),
+    CellOutcome::Fail(v) => format!("{header} value={v} verdict=FAIL"),
+    CellOutcome::Error(e) => format!("{header} error=\"{e}\" verdict=ERROR"),
+  };
 }
 
 /// Prints the row/column index reference for one or all block types.
@@ -149,19 +311,7 @@ fn main() -> ExitCode {
       }
     };
     return match run_oneliner(&spec, path) {
-      Ok((outcome, value)) => {
-        eprintln!("{value}");
-        match outcome {
-          OnelinerOutcome::Pass => {
-            println!("PASS");
-            ExitCode::SUCCESS
-          }
-          OnelinerOutcome::Fail => {
-            println!("FAIL");
-            ExitCode::from(1)
-          }
-        }
-      }
+      Ok(cells) => report_oneliner(&cells, cli.verbose),
       Err(e) => {
         eprintln!("{e}");
         println!("ERROR");
@@ -170,7 +320,7 @@ fn main() -> ExitCode {
     };
   }
   match cli.path {
-    Some(p) => match run_script(p) {
+    Some(p) => match run_script(p, cli.verbose) {
       Ok(flagged) => {
         // Exit code is the total number of flagged values, capped at 254 so
         // it does not collide with the general-failure code (255 / -1).

@@ -44,6 +44,11 @@ max_difference = 0.0
 name = "within 10%"
 max_ratio = 1.1
 
+[[criteria]]
+name = "within 5% (percent + floor)"
+percent_tolerance = 5.0
+epsilon = 1e-9
+
 [[comparison]]
 name = "sb-all-elem, equal translations"
 reference_f06 = "scnastran_all_elem"
@@ -57,6 +62,13 @@ reference_f06 = "scnastran_all_elem"
 test_f06 = "mystran_all_elem"
 extractions = ["1d elem stresses", "2d elem stresses"]
 criteria = "within 10%"
+
+[[comparison]]
+name = "sb-all-elem, translations within 5% (percent+floor)"
+reference_f06 = "scnastran_all_elem"
+test_f06 = "mystran_all_elem"
+extraction = "nodal translations"
+criteria = "within 5% (percent + floor)"
 
 [[check]]
 name = "no translation on 1011, 1012, 1013"
