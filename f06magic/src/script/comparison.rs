@@ -22,9 +22,6 @@ pub(crate) struct Comparison {
   /// Comparison criteria to apply.
   #[serde(alias = "criterion")]
   pub(crate) criteria: String,
-  /// Output a report to a file.
-  #[serde(default)]
-  pub(crate) report: Option<String>,
 }
 
 /// The results from a run.
