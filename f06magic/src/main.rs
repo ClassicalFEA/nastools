@@ -150,11 +150,11 @@ fn fmt_reason(reason: &FlagReason) -> String {
     FlagReason::Ratio {
       big_to_small,
       max_ratio,
-    } => format!("ratio={big_to_small} > {max_ratio}"),
+    } => format!("ratio={big_to_small:.3} > {max_ratio:.3}"),
     FlagReason::Percent {
       percent,
       max_percent,
-    } => format!("percent={percent} > {max_percent}"),
+    } => format!("percent={percent:.3} > {max_percent:.3}"),
     FlagReason::FloorAsymmetry {
       ref_val,
       test_val,
