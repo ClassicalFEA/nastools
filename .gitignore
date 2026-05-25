@@ -2,3 +2,4 @@
 *.stdout
 *.csv
 .vscode
+f06csv_web/dist
