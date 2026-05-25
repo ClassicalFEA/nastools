@@ -1,4 +1,4 @@
-use crate::util::{decode_nasfloat, unspace};
+use crate::util::{decode_nasfloat, line_breakdown, unspace, LineField};
 
 #[test]
 fn test_decode_nasfloat() {
@@ -63,6 +63,101 @@ fn test_decode_nasfloat() {
 fn test_decode_headers() {
   let my_displ = "                                  D I S P L A C E M E N T S";
   assert_ne!(unspace(my_displ), None);
+}
+
+#[test]
+fn test_line_breakdown_splits_glued_exponent() {
+  let eps = 1e-9_f64;
+  let near = |a: f64, b: f64| assert!((a - b).abs() < eps, "{a} vs {b}");
+  let fields = |s: &'static str| line_breakdown(s).collect::<Vec<_>>();
+
+  // The bug-driving case: a zero-valued field abutting an 8-digit element ID.
+  match fields("0.000000E+0022345678")[..] {
+    [LineField::Real(x), LineField::Integer(i)] => {
+      near(x, 0.0);
+      assert_eq!(i, 22345678);
+    }
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // Non-zero mantissa case (would have become +inf without the split).
+  match fields("1.293243E+031234")[..] {
+    [LineField::Real(x), LineField::Integer(i)] => {
+      near(x, 1.293243e3);
+      assert_eq!(i, 1234);
+    }
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // Negative exponent.
+  match fields("1.500000E-031234")[..] {
+    [LineField::Real(x), LineField::Integer(i)] => {
+      near(x, 1.5e-3);
+      assert_eq!(i, 1234);
+    }
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // Lower-case `e` form.
+  match fields("2.5e+0142")[..] {
+    [LineField::Real(x), LineField::Integer(i)] => {
+      near(x, 2.5e1);
+      assert_eq!(i, 42);
+    }
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // No collision — must pass through untouched.
+  match fields("1.293243E+03")[..] {
+    [LineField::Real(x)] => near(x, 1.293243e3),
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // Plain integer — untouched.
+  match fields("12345")[..] {
+    [LineField::Integer(12345)] => {}
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // Plain decimal without exponent — untouched.
+  match fields("1.23")[..] {
+    [LineField::Real(x)] => near(x, 1.23),
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // Tail doesn't start with a digit — must NOT split.
+  // `1.5E+03ROD` would not be a glued-ID case; we should leave it alone so
+  // the `ElementType`/`NoIdea` matcher can handle it.
+  let f = fields("1.5E+03ROD");
+  assert_eq!(f.len(), 1);
+  assert!(matches!(
+    f[0],
+    LineField::ElementType(_) | LineField::NoIdea(_) | LineField::Real(_)
+  ));
+
+  // 1-digit exponent (shouldn't appear in F06, but defensive) — untouched.
+  match fields("1.234567E+1")[..] {
+    [LineField::Real(x)] => near(x, 1.234567e1),
+    ref other => panic!("unexpected: {other:?}"),
+  }
+
+  // Multiple whitespace-separated tokens, one of which is glued.
+  let f = fields("5  0.000000E+00  0.000000E+0022345678  1.293243E+03");
+  assert_eq!(f.len(), 5, "fields: {f:?}");
+  match f[..] {
+    [
+      LineField::Integer(5),
+      LineField::Real(a),
+      LineField::Real(b),
+      LineField::Integer(22345678),
+      LineField::Real(c),
+    ] => {
+      near(a, 0.0);
+      near(b, 0.0);
+      near(c, 1.293243e3);
+    }
+    ref other => panic!("unexpected: {other:?}"),
+  }
 }
 
 #[test]

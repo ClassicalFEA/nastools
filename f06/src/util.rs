@@ -144,12 +144,77 @@ impl<'s> LineField<'s> {
   }
 }
 
-/// Breaks down a line into an iterator of fields.
+/// Splits a token that begins with a Fortran `1PE…`-style scientific float
+/// glued to a trailing field. F06 prints reals as `[+-]d.dddddde[+-]dd` (two
+/// exponent digits — Fortran `1PE13.6`), so when right-justified columns
+/// collide we can see things like `0.000000E+0022345678` (a zero abutting an
+/// element ID). This helper recognises that pattern and returns the float
+/// prefix (up through the 2-digit exponent) and the leftover tail. Returns
+/// `(s, None)` for anything else.
+///
+/// Guards against false positives by requiring (a) the tail to start with a
+/// digit, and (b) the proposed float prefix to actually parse as `f64`.
+fn split_glued_exponent(s: &str) -> (&str, Option<&str>) {
+  let bytes = s.as_bytes();
+  // need at least `dE+ddX` = 6 bytes
+  if bytes.len() < 6 {
+    return (s, None);
+  }
+  // find an `e` or `E` not at the very start
+  let e_pos = match bytes
+    .iter()
+    .enumerate()
+    .find(|(i, &b)| *i > 0 && (b == b'e' || b == b'E'))
+  {
+    Some((i, _)) => i,
+    None => return (s, None),
+  };
+  // expect optional sign then exactly two digits, then more chars starting
+  // with a digit
+  let mut p = e_pos + 1;
+  if p >= bytes.len() {
+    return (s, None);
+  }
+  if bytes[p] == b'+' || bytes[p] == b'-' {
+    p += 1;
+  }
+  // need two exponent digits
+  if p + 2 > bytes.len()
+    || !bytes[p].is_ascii_digit()
+    || !bytes[p + 1].is_ascii_digit()
+  {
+    return (s, None);
+  }
+  let split_at = p + 2;
+  // need a tail and the tail must start with a digit (so we don't cleave a
+  // hypothetical 3-digit exponent followed by non-numeric junk, and so we
+  // don't split when the next field would not be an integer anyway)
+  if split_at >= bytes.len() || !bytes[split_at].is_ascii_digit() {
+    return (s, None);
+  }
+  let prefix = &s[..split_at];
+  let tail = &s[split_at..];
+  // only commit if the prefix really is a float
+  if prefix.parse::<f64>().is_err() {
+    return (s, None);
+  }
+  return (prefix, Some(tail));
+}
+
+/// Breaks down a line into an iterator of fields. Whitespace-separated tokens
+/// that contain a glued scientific float (see [`split_glued_exponent`]) are
+/// split into multiple fields.
 pub(crate) fn line_breakdown(s: &str) -> impl Iterator<Item = LineField<'_>> {
   return s
     .split(' ')
     .filter(|subs| !subs.is_empty())
-    .map(LineField::parse);
+    .flat_map(|tok| {
+      let mut out: [Option<&str>; 2] = [None, None];
+      let (head, tail) = split_glued_exponent(tok);
+      out[0] = Some(head);
+      out[1] = tail;
+      out.into_iter().flatten().map(LineField::parse)
+    });
 }
 
 /// Gets a certain number of reals from a line.
