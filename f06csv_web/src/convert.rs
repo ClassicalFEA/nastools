@@ -5,11 +5,9 @@ use std::io::{BufReader, Cursor};
 
 use csv::Terminator;
 use f06::prelude::{ElementType, F06File, OnePassParser};
-use nas_csv::prelude::{
-  Alignment, CsvBlockId, CsvRecord, RowHeader,
-};
 use nas_csv::from_f06::templates::all_converters;
 use nas_csv::from_f06::to_records;
+use nas_csv::prelude::{Alignment, CsvBlockId, CsvRecord, RowHeader};
 
 use crate::options::Options;
 
@@ -23,15 +21,20 @@ pub fn known_block_ids() -> &'static [CsvBlockId] {
 }
 
 /// Runs the full F06 → CSV conversion. Returns the CSV text or an error
-/// message suitable for display.
+/// message suitable for display. `name`, if supplied, is recorded as the
+/// origin filename so the Metadata block can include it.
 pub fn run_conversion(
   bytes: &[u8],
   opts: &Options,
+  name: Option<&str>,
 ) -> Result<String, String> {
   // parse
   let cursor = Cursor::new(bytes);
   let mut f06: F06File = OnePassParser::parse_bufread(BufReader::new(cursor))
     .map_err(|e| format!("parser error: {e:?}"))?;
+  if let Some(n) = name {
+    f06.filename = Some(n.to_owned());
+  }
   f06.merge_blocks(true);
   f06.merge_potential_headers();
   f06.sort_all_blocks();

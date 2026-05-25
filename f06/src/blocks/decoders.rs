@@ -372,6 +372,8 @@ pub(crate) struct QuadStressesDecoder {
   cur_row: Option<<Self as BlockDecoder>::RowIndex>,
   /// Element type, hinted by the header.
   etype: Option<ElementType>,
+  /// 1-based corner position counter, reset for each new element.
+  corner_counter: u8,
 }
 
 impl BlockDecoder for QuadStressesDecoder {
@@ -387,6 +389,7 @@ impl BlockDecoder for QuadStressesDecoder {
       data: RowBlock::new(PlateStressField::canonical_cols()),
       cur_row: None,
       etype: None,
+      corner_counter: 0,
     };
   }
 
@@ -408,6 +411,7 @@ impl BlockDecoder for QuadStressesDecoder {
 
   fn hint_last(&mut self, last: NasIndex) {
     if let NasIndex::ElementSidedPoint(esp) = last {
+      self.corner_counter = esp.corner_index.unwrap_or(0);
       self.cur_row = Some(esp);
     }
   }
@@ -465,6 +469,22 @@ impl BlockDecoder for QuadStressesDecoder {
             warn!("no eid at {line}");
             return LineResponse::Abort;
           };
+          let corner_index = match point {
+            ElementPoint::Corner(_) => {
+              let is_new_element =
+                self.cur_row.map_or(true, |r| r.element.eid != eid);
+              if is_new_element {
+                self.corner_counter = 1;
+              } else {
+                self.corner_counter += 1;
+              }
+              Some(self.corner_counter)
+            }
+            _ => {
+              self.corner_counter = 0;
+              None
+            }
+          };
           self.cur_row.replace(ElementSidedPoint {
             element: ElementRef {
               eid,
@@ -472,6 +492,7 @@ impl BlockDecoder for QuadStressesDecoder {
             },
             point,
             side,
+            corner_index,
           });
         }
       }
@@ -503,6 +524,22 @@ impl BlockDecoder for QuadStressesDecoder {
             warn!("no eid at {line}");
             return LineResponse::Abort;
           };
+          let corner_index = match point {
+            ElementPoint::Corner(_) => {
+              let is_new_element =
+                self.cur_row.map_or(true, |r| r.element.eid != eid);
+              if is_new_element {
+                self.corner_counter = 1;
+              } else {
+                self.corner_counter += 1;
+              }
+              Some(self.corner_counter)
+            }
+            _ => {
+              self.corner_counter = 0;
+              None
+            }
+          };
           self.cur_row.replace(ElementSidedPoint {
             element: ElementRef {
               eid,
@@ -510,6 +547,7 @@ impl BlockDecoder for QuadStressesDecoder {
             },
             point,
             side,
+            corner_index,
           });
         }
       }
@@ -978,6 +1016,7 @@ impl BlockDecoder for TriaStressesDecoder {
         element,
         point,
         side,
+        corner_index: None,
       }
     } else {
       warn!("no eid on data line on {line}");

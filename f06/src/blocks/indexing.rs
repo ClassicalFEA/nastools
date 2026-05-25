@@ -865,16 +865,7 @@ impl FromStr for PointInElement {
 
 /// An element and a point within it, plus a side.
 #[derive(
-  Copy,
-  Clone,
-  Debug,
-  Serialize,
-  Deserialize,
-  PartialOrd,
-  Ord,
-  PartialEq,
-  Eq,
-  derive_more::From,
+  Copy, Clone, Debug, Serialize, Deserialize, PartialOrd, Ord, PartialEq, Eq,
 )]
 pub struct ElementSidedPoint {
   /// A reference to the element.
@@ -883,6 +874,9 @@ pub struct ElementSidedPoint {
   pub point: ElementPoint,
   /// The side.
   pub side: ElementSide,
+  /// The 1-based corner position within the element's connectivity list, if
+  /// known. Only set for GRD (corner) rows in plate stress/strain blocks.
+  pub corner_index: Option<u8>,
 }
 
 impl Display for ElementSidedPoint {
@@ -938,6 +932,7 @@ impl FromStr for ElementSidedPoint {
       element: eid.into(),
       point,
       side,
+      corner_index: None,
     });
   }
 }

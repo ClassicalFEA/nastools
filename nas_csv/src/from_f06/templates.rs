@@ -212,7 +212,7 @@ pub const CT_STRESSES_QUAD: BlockConverter = BlockConverter {
     [],
     [],
     [ShearXY,],
-    [BLANK, BLANK,],
+    [ColumnGenerator::CornerIndex, BLANK,],
   )],
   headers: &[[
     "EID (QUAD4)",
@@ -223,7 +223,7 @@ pub const CT_STRESSES_QUAD: BlockConverter = BlockConverter {
     "NormalY",
     HBLANK,
     "ShearXY",
-    HBLANK,
+    "CornerIdx",
     HBLANK,
   ]],
 };
@@ -242,7 +242,7 @@ pub const CT_STRESSES_TRIA: BlockConverter = BlockConverter {
     "NormalY",
     HBLANK,
     "ShearXY",
-    HBLANK,
+    "CornerIdx",
     HBLANK,
   ]],
 };
@@ -451,7 +451,7 @@ pub const CT_STRAINS_QUAD: BlockConverter = BlockConverter {
     [],
     [],
     [ShearXY,],
-    [BLANK, BLANK,],
+    [ColumnGenerator::CornerIndex, BLANK,],
   )],
   headers: CT_STRESSES_QUAD.headers,
 };

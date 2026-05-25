@@ -104,6 +104,9 @@ pub enum ColumnGenerator {
   ConstantString(&'static str),
   /// Runs another generator, with a default for errors.
   WithDefault(&'static ColumnGenerator, &'static CsvField),
+  /// Outputs the 1-based corner position within the element (0 for centroid/
+  /// non-corner rows).
+  CornerIndex,
 }
 
 impl ColumnGenerator {
@@ -147,6 +150,7 @@ impl ColumnGenerator {
       Self::WithDefault(g, d) => {
         g.convert(block, flavour, row).unwrap_or((*d).clone())
       }
+      Self::CornerIndex => return ixfn_corner_index(row),
     });
   }
 }

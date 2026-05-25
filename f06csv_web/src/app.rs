@@ -115,6 +115,7 @@ pub fn app() -> Html {
   let on_convert = {
     let file_bytes = file_bytes.clone();
     let options = options.clone();
+    let filename = filename.clone();
     let csv_output = csv_output.clone();
     let error = error.clone();
     let running = running.clone();
@@ -126,6 +127,7 @@ pub fn app() -> Html {
         return;
       };
       let opts = (*options).clone();
+      let name: Option<String> = (*filename).as_ref().map(|n| n.to_string());
       let csv_output = csv_output.clone();
       let error = error.clone();
       let running = running.clone();
@@ -134,7 +136,7 @@ pub fn app() -> Html {
       csv_output.set(None);
       // Yield to the browser so the spinner can paint, then convert.
       spawn_local(async move {
-        let result = run_conversion(&bytes, &opts);
+        let result = run_conversion(&bytes, &opts, name.as_deref());
         match result {
           Ok(csv) => {
             csv_output.set(Some(AttrValue::from(csv)));
@@ -171,6 +173,7 @@ pub fn app() -> Html {
   {
     let options_dep = (*options).clone();
     let file_bytes = file_bytes.clone();
+    let filename = filename.clone();
     let csv_output = csv_output.clone();
     let error = error.clone();
     let running = running.clone();
@@ -181,12 +184,14 @@ pub fn app() -> Html {
         if *on && *has_file {
           if let Some(bytes) = (*file_bytes).clone() {
             let opts = opts.clone();
+            let name: Option<String> =
+              (*filename).as_ref().map(|n| n.to_string());
             let csv_output = csv_output.clone();
             let error = error.clone();
             let running = running.clone();
             running.set(true);
             spawn_local(async move {
-              match run_conversion(&bytes, &opts) {
+              match run_conversion(&bytes, &opts, name.as_deref()) {
                 Ok(csv) => {
                   csv_output.set(Some(AttrValue::from(csv)));
                   error.set(None);

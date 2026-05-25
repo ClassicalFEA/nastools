@@ -93,3 +93,15 @@ pub fn ixfn_csys(index: NasIndex) -> Result<CsvField, ConversionError> {
     idx => Err(ConversionError::BadRowIndexType(idx)),
   }
 }
+
+/// Extracts the 1-based corner position within the element's connectivity
+/// list. Returns 0 for centroid rows or any element point that is not a
+/// numbered corner (e.g. Anywhere).
+pub fn ixfn_corner_index(index: NasIndex) -> Result<CsvField, ConversionError> {
+  match index {
+    NasIndex::ElementSidedPoint(esp) => {
+      Ok(CsvField::Natural(esp.corner_index.unwrap_or(0) as usize))
+    }
+    _ => bad_col_type(index),
+  }
+}
