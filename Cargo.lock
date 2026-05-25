@@ -1604,11 +1604,18 @@ dependencies = [
  "clap",
  "env_logger 0.11.10",
  "f06",
+ "fasteval2",
  "log",
  "num",
  "serde",
  "toml",
 ]
+
+[[package]]
+name = "fasteval2"
+version = "2.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "693f2d239802e51c2b7381927eef77061c64fbef1cf2582ab66ffb326c1b52f8"
 
 [[package]]
 name = "fastrand"

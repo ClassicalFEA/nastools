@@ -22,17 +22,40 @@ pub(crate) struct Comparison {
   /// Comparison criteria to apply.
   #[serde(alias = "criterion")]
   pub(crate) criteria: String,
+  /// User-supplied boolean equation; flags the datum when the equation
+  /// evaluates to `0.0` or `NaN`. See `script::equation` for the grammar.
+  #[serde(default, alias = "formula", alias = "predicate")]
+  pub(crate) equation: Option<String>,
+}
+
+/// Why a datum was flagged within a comparison. Wraps libf06's
+/// [`FlagReason`] and adds an [`FlagReason2::Equation`] variant for
+/// f06magic's user-supplied predicates.
+#[derive(Clone, Debug)]
+pub(crate) enum FlagReason2 {
+  /// Flagged by the comparison criteria.
+  Criteria(FlagReason),
+  /// Flagged by a user-supplied equation.
+  Equation {
+    /// Original equation source.
+    raw: String,
+    /// Numeric result returned by the equation (`f64::NAN` when evaluation
+    /// itself failed).
+    value: f64,
+    /// Optional error message when fasteval2 itself returned an error.
+    error: Option<String>,
+  },
 }
 
 /// Details of a single flagged datum within a comparison.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct FlaggedDetail {
   /// Value read from the reference file.
   pub(crate) ref_val: F06Number,
   /// Value read from the test file.
   pub(crate) test_val: F06Number,
   /// Why the criteria flagged the pair.
-  pub(crate) reason: FlagReason,
+  pub(crate) reason: FlagReason2,
 }
 
 /// The results from a run.

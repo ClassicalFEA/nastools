@@ -3,6 +3,7 @@
 pub(crate) mod check;
 pub(crate) mod comparison;
 pub(crate) mod criteria;
+pub(crate) mod equation;
 pub(crate) mod errors;
 pub(crate) mod extraction;
 pub(crate) mod index;
@@ -13,8 +14,11 @@ use f06::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::script::check::{Check, CheckResult};
-use crate::script::comparison::{Comparison, ComparisonResult, FlaggedDetail};
+use crate::script::comparison::{
+  Comparison, ComparisonResult, FlagReason2, FlaggedDetail,
+};
 use crate::script::criteria::SimpleCriteria;
+use crate::script::equation::{Equation, EvalOutcome, Scope, Stats};
 use crate::script::errors::{
   CheckRunError, ComparisonRunError, ScriptValidationError,
 };
@@ -54,6 +58,38 @@ impl Script {
       let resolved = simple.resolve()?;
       extractions.insert(name, resolved);
     }
+    // Parse equations, if any, into Equation objects keyed by check /
+    // comparison name. Empty/missing equations stay absent from these maps.
+    let mut check_equations: BTreeMap<String, Equation> = BTreeMap::new();
+    for c in &self.checks {
+      if let Some(raw) = c.equation.as_deref()
+        && !raw.trim().is_empty()
+      {
+        let eq = Equation::parse(raw, Scope::Check).map_err(|e| {
+          ScriptValidationError::Equation {
+            kind: "check",
+            name: c.name.clone(),
+            cause: e,
+          }
+        })?;
+        check_equations.insert(c.name.clone(), eq);
+      }
+    }
+    let mut comparison_equations: BTreeMap<String, Equation> = BTreeMap::new();
+    for c in &self.comparisons {
+      if let Some(raw) = c.equation.as_deref()
+        && !raw.trim().is_empty()
+      {
+        let eq = Equation::parse(raw, Scope::Comparison).map_err(|e| {
+          ScriptValidationError::Equation {
+            kind: "comparison",
+            name: c.name.clone(),
+            cause: e,
+          }
+        })?;
+        comparison_equations.insert(c.name.clone(), eq);
+      }
+    }
     return Ok(ReadyScript {
       files,
       extractions,
@@ -72,6 +108,8 @@ impl Script {
         .into_iter()
         .map(|c| (c.name.clone(), c))
         .collect(),
+      check_equations,
+      comparison_equations,
     });
   }
 }
@@ -121,6 +159,11 @@ pub(crate) struct ReadyScript {
   pub(crate) comparisons: BTreeMap<String, Comparison>,
   /// The checks within this script.
   pub(crate) checks: BTreeMap<String, Check>,
+  /// Parsed equations for checks (keyed by check name). Absent when the
+  /// check has no `equation` field.
+  pub(crate) check_equations: BTreeMap<String, Equation>,
+  /// Parsed equations for comparisons (keyed by comparison name).
+  pub(crate) comparison_equations: BTreeMap<String, Equation>,
 }
 
 impl ReadyScript {
@@ -163,6 +206,38 @@ impl ReadyScript {
       indices.extend(ex.lookup(ref_file));
       indices.extend(ex.lookup(test_file));
     }
+    // If an equation is attached, precompute per-side stats over the
+    // union of indices. Missing-in-one-file readings substitute 0.0
+    // (matching the same convention as the criteria pass below).
+    let equation = self.comparison_equations.get(name);
+    let (ref_stats, test_stats): (Option<Stats>, Option<Stats>) =
+      if equation.is_some() {
+        let ref_vals: Vec<f64> = indices
+          .iter()
+          .map(|i| i.get_from(ref_file).unwrap_or(F06Number::Real(0.0)).into())
+          .collect();
+        let test_vals: Vec<f64> = indices
+          .iter()
+          .map(|i| i.get_from(test_file).unwrap_or(F06Number::Real(0.0)).into())
+          .collect();
+        let rs = Stats::from_values(ref_vals);
+        let ts = Stats::from_values(test_vals);
+        if rs.is_none() {
+          return Err(ComparisonRunError::EmptyEquationPool {
+            name: name.to_owned(),
+            side: "reference",
+          });
+        }
+        if ts.is_none() {
+          return Err(ComparisonRunError::EmptyEquationPool {
+            name: name.to_owned(),
+            side: "test",
+          });
+        }
+        (rs, ts)
+      } else {
+        (None, None)
+      };
     let mut flagged: BTreeMap<DatumIndex, FlaggedDetail> = BTreeMap::new();
     for i in indices.iter() {
       let ref_val = i.get_from(ref_file).unwrap_or(F06Number::Real(0.0));
@@ -173,9 +248,47 @@ impl ReadyScript {
           FlaggedDetail {
             ref_val,
             test_val,
-            reason,
+            reason: FlagReason2::Criteria(reason),
           },
         );
+        continue;
+      }
+      if let (Some(eq), Some(rs), Some(ts)) =
+        (equation, ref_stats.as_ref(), test_stats.as_ref())
+      {
+        let xv: f64 = test_val.into();
+        let yv: f64 = ref_val.into();
+        match eq.evaluate(xv, Some(yv), ts, Some(rs)) {
+          EvalOutcome::Pass { .. } => {}
+          EvalOutcome::Fail { value } => {
+            flagged.insert(
+              *i,
+              FlaggedDetail {
+                ref_val,
+                test_val,
+                reason: FlagReason2::Equation {
+                  raw: eq.raw().to_owned(),
+                  value,
+                  error: None,
+                },
+              },
+            );
+          }
+          EvalOutcome::Error { message } => {
+            flagged.insert(
+              *i,
+              FlaggedDetail {
+                ref_val,
+                test_val,
+                reason: FlagReason2::Equation {
+                  raw: eq.raw().to_owned(),
+                  value: f64::NAN,
+                  error: Some(message),
+                },
+              },
+            );
+          }
+        }
       }
     }
     return Ok(ComparisonResult {
@@ -194,6 +307,7 @@ impl ReadyScript {
       .checks
       .get(name)
       .ok_or(CheckRunError::CheckNotFound(name.to_string()))?;
+    let equation = self.check_equations.get(name);
     // get the files and extractions
     let f06_names = &check.files;
     let extractions_names = &check.extractions;
@@ -207,8 +321,25 @@ impl ReadyScript {
           .extractions
           .get(en)
           .ok_or(CheckRunError::ExtractionNotFound(en.clone()))?;
-        let nums = ex.lookup(f06).map(|di| (di, di.get_from(f06).unwrap()));
-        let pres = check.run_for(nums);
+        let collected: Vec<(DatumIndex, F06Number)> = ex
+          .lookup(f06)
+          .map(|di| (di, di.get_from(f06).unwrap()))
+          .collect();
+        let stats: Option<Stats> = if equation.is_some() {
+          let s =
+            Stats::from_values(collected.iter().map(|(_, n)| f64::from(*n)));
+          if s.is_none() {
+            return Err(CheckRunError::EmptyEquationPool {
+              name: name.to_owned(),
+              file: f06_name.to_owned(),
+              extraction: en.to_owned(),
+            });
+          }
+          s
+        } else {
+          None
+        };
+        let pres = check.run_for(collected, equation, stats.as_ref());
         results
           .per_pair
           .insert((f06_name.to_owned(), en.to_owned()), pres);

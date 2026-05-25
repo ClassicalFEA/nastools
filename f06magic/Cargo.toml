@@ -11,6 +11,7 @@ log = "0.4"
 env_logger = "0.11"
 toml = "0.8"
 num = "0.4"
+fasteval2 = "2.1"
 
 [dependencies.f06]
 version = "0.6"

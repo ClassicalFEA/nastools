@@ -6,6 +6,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use f06::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use crate::script::equation::{Equation, EvalOutcome, Stats};
 use crate::utils::OneOrMany;
 
 /// A check takes a single F06 file and verifies if all values within an
@@ -32,6 +33,10 @@ pub(crate) struct Check {
   /// Values (sorted) must all fall within these ranges.
   #[serde(default)]
   pub(crate) ranges: Option<Vec<(f64, f64)>>,
+  /// User-supplied boolean equation; PASS iff the equation evaluates to
+  /// a non-zero, non-NaN value. See `script::equation` for the grammar.
+  #[serde(default, alias = "formula", alias = "predicate")]
+  pub(crate) equation: Option<String>,
 }
 
 /// Which check rule caused a value to be flagged, plus the relevant
@@ -68,6 +73,17 @@ pub(crate) enum CheckRule {
     /// Inclusive upper bound.
     hi: f64,
   },
+  /// `equation` rule: the user-supplied predicate returned a fail value
+  /// (`0.0` or `NaN`), or its evaluation produced an error.
+  Equation {
+    /// Original equation source.
+    raw: String,
+    /// Numeric result returned by the equation (`f64::NAN` when evaluation
+    /// itself failed).
+    value: f64,
+    /// Optional error message when fasteval2 itself returned an error.
+    error: Option<String>,
+  },
 }
 
 /// Detail of a single flagged datum within a check.
@@ -96,8 +112,15 @@ pub(crate) struct CheckResult {
 }
 
 impl Check {
-  /// Runs this check for a set of numbers.
-  pub(crate) fn run_for<I>(&self, numbers: I) -> PartialCheckResult
+  /// Runs this check for a set of numbers, optionally evaluating a parsed
+  /// `equation` against the precomputed `stats` (both must be `Some` or
+  /// both `None`; the caller decides).
+  pub(crate) fn run_for<I>(
+    &self,
+    numbers: I,
+    equation: Option<&Equation>,
+    stats: Option<&Stats>,
+  ) -> PartialCheckResult
   where
     I: IntoIterator<Item = (DatumIndex, F06Number)>,
   {
@@ -161,6 +184,39 @@ impl Check {
           },
         );
         continue;
+      }
+      if let (Some(eq), Some(st)) = (equation, stats) {
+        match eq.evaluate(x, None, st, None) {
+          EvalOutcome::Pass { .. } => {}
+          EvalOutcome::Fail { value } => {
+            results.flagged.insert(
+              di,
+              CheckFailure {
+                value: x_tmp,
+                rule: CheckRule::Equation {
+                  raw: eq.raw().to_owned(),
+                  value,
+                  error: None,
+                },
+              },
+            );
+            continue;
+          }
+          EvalOutcome::Error { message } => {
+            results.flagged.insert(
+              di,
+              CheckFailure {
+                value: x_tmp,
+                rule: CheckRule::Equation {
+                  raw: eq.raw().to_owned(),
+                  value: f64::NAN,
+                  error: Some(message),
+                },
+              },
+            );
+            continue;
+          }
+        }
       }
     }
     return results;

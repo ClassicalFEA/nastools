@@ -23,6 +23,13 @@
 //! subcase <N> <block> <row> <col> <A> ±       <P>% floor <E>
 //! ```
 //!
+//! Variable-length `satisfies` form (everything after `satisfies` is the
+//! expression):
+//!
+//! ```text
+//! subcase <N> <block> <row> <col> satisfies <equation ...>
+//! ```
+//!
 //! - `<A> to <B>`: inclusive range `[min(A,B), max(A,B)]`.
 //! - `<A> delta <B>`, `<A> ± <B>`: inclusive symmetric range
 //!   `[A - B, A + B]`; `B >= 0`.
@@ -32,6 +39,12 @@
 //!   `|test|` are below `E` the check passes; when exactly one is below it
 //!   fails; otherwise the percent formula applies. With no floor and
 //!   `A == 0` the check fails unless `test == 0`.
+//! - `satisfies <expr>`: the cell's value is bound to `x` / `t` in the
+//!   expression; per-cell PASS iff the expression evaluates to a non-zero,
+//!   non-NaN value. Magic stat variables (`min`, `max`, `mina`, `maxa`,
+//!   `avg`, `sum`, `std`, `stdp`, `stds`, `n`) are computed across the
+//!   cartesian product. See the f06magic `script::equation` module for
+//!   the full grammar.
 //!
 //! `<N>`, `<row>`, and `<col>` may be comma-separated lists (no spaces);
 //! every combination in the cartesian product is evaluated. The numeric
@@ -48,6 +61,9 @@ use std::str::FromStr;
 
 use f06::prelude::*;
 
+use crate::script::equation::{
+  Equation, EquationError, EvalOutcome, Scope, Stats,
+};
 use crate::script::errors::ScriptValidationError;
 use crate::script::extraction::SimpleExtraction;
 use crate::script::index::LenientNasIndex;
@@ -63,7 +79,7 @@ pub(crate) enum OnelinerOutcome {
 }
 
 /// Bounds half of a one-liner spec.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug)]
 pub(crate) enum Bounds {
   /// `<A> to <B>`, normalised so `lo <= hi`.
   Range {
@@ -90,22 +106,66 @@ pub(crate) enum Bounds {
     /// Optional near-zero floor (non-negative when `Some`).
     floor: Option<f64>,
   },
+  /// `satisfies <expression>`. The cell's value is bound to `x`/`t` in the
+  /// equation; magic stats (`min`, `max`, `avg`, `std`, `stdp`, `stds`,
+  /// `sum`, `n`) are computed across the cartesian product. PASS iff the
+  /// equation evaluates to a non-zero, non-NaN value.
+  Satisfies(Box<Equation>),
+}
+
+impl PartialEq for Bounds {
+  fn eq(&self, other: &Self) -> bool {
+    return match (self, other) {
+      (Bounds::Range { lo: a, hi: b }, Bounds::Range { lo: c, hi: d }) => {
+        a == c && b == d
+      }
+      (
+        Bounds::Delta { center: a, tol: b },
+        Bounds::Delta { center: c, tol: d },
+      ) => a == c && b == d,
+      (
+        Bounds::Percent {
+          center: a,
+          tol_pct: b,
+          floor: c,
+        },
+        Bounds::Percent {
+          center: d,
+          tol_pct: e,
+          floor: f,
+        },
+      ) => a == d && b == e && c == f,
+      // Satisfies variants are never compared via `==` (they carry an
+      // owned parser arena that has no meaningful equality).
+      _ => false,
+    };
+  }
 }
 
 impl Bounds {
   /// Returns true iff `value` lies within this bound. Always false for NaN.
+  ///
+  /// Not valid for [`Bounds::Satisfies`]; the caller (`run_oneliner`)
+  /// dispatches that variant through a separate two-pass path.
   pub(crate) fn contains(&self, value: f64) -> bool {
     if value.is_nan() {
       return false;
     }
-    return match *self {
-      Bounds::Range { lo, hi } => lo <= value && value <= hi,
-      Bounds::Delta { center, tol } => (value - center).abs() <= tol,
+    return match self {
+      Bounds::Range { lo, hi } => *lo <= value && value <= *hi,
+      Bounds::Delta { center, tol } => (value - *center).abs() <= *tol,
       Bounds::Percent {
         center,
         tol_pct,
         floor,
-      } => percent_pass(center, value, tol_pct, floor),
+      } => percent_pass(*center, value, *tol_pct, *floor),
+      Bounds::Satisfies(_) => {
+        debug_assert!(
+          false,
+          "Bounds::Satisfies must be dispatched through run_oneliner",
+        );
+        false
+      }
     };
   }
 }
@@ -136,7 +196,7 @@ fn percent_pass(
 }
 
 /// A parsed one-liner spec, ready to be resolved against an F06 file.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct OnelinerSpec {
   /// Subcase numbers (cartesian-expanded).
   pub(crate) subcases: Vec<usize>,
@@ -234,6 +294,12 @@ pub(crate) enum OnelinerError {
   },
   /// More than one (subcase, block, row, col) tuple matched.
   Ambiguous(usize),
+  /// The `satisfies` expression failed to parse (or referenced an
+  /// out-of-scope variable).
+  EquationParse(EquationError),
+  /// `satisfies` was used but every cell either failed to resolve or
+  /// produced a non-finite value, leaving no values for stats.
+  EmptyEquationPool,
 }
 
 impl Display for OnelinerError {
@@ -243,7 +309,8 @@ impl Display for OnelinerError {
         f,
         "one-liner spec must have 8 or 10 tokens (got {n}); expected:\n  \
          subcase <N> <block> <row> <col> <A> <to|delta|percent|pct> <B>\n  \
-         subcase <N> <block> <row> <col> <A> <percent|pct> <P> floor <E>",
+         subcase <N> <block> <row> <col> <A> <percent|pct> <P> floor <E>\n  \
+         subcase <N> <block> <row> <col> satisfies <equation ...>",
       ),
       Self::BadSubcaseLiteral(t) => write!(
         f,
@@ -299,6 +366,12 @@ impl Display for OnelinerError {
         "one-liner expects a single value per cell but {n} matched; \
          narrow the spec",
       ),
+      Self::EquationParse(e) => write!(f, "{e}"),
+      Self::EmptyEquationPool => write!(
+        f,
+        "`satisfies` needs at least one cell to resolve to a finite value; \
+         the pool was empty",
+      ),
     };
   }
 }
@@ -327,7 +400,7 @@ pub(crate) fn parse_oneliner(
   spec: &str,
 ) -> Result<OnelinerSpec, OnelinerError> {
   let tokens: Vec<&str> = spec.split_ascii_whitespace().collect();
-  if tokens.len() != 8 && tokens.len() != 10 {
+  if tokens.len() < 5 {
     return Err(OnelinerError::BadTokenCount(tokens.len()));
   }
   if !tokens[0].eq_ignore_ascii_case("subcase") {
@@ -346,6 +419,25 @@ pub(crate) fn parse_oneliner(
     .map_err(|why| OnelinerError::BadBlock(tokens[2].to_owned(), why))?;
   let rows = split_csv(tokens[3], "row")?;
   let cols = split_csv(tokens[4], "col")?;
+  // Variable-length `satisfies` form: subcase N block row col satisfies <expr ...>.
+  if tokens.len() >= 6 && tokens[5].eq_ignore_ascii_case("satisfies") {
+    if tokens.len() < 7 {
+      return Err(OnelinerError::BadTokenCount(tokens.len()));
+    }
+    let expr = tokens[6..].join(" ");
+    let eq = Equation::parse(&expr, Scope::OnelinerCell)
+      .map_err(OnelinerError::EquationParse)?;
+    return Ok(OnelinerSpec {
+      subcases,
+      block,
+      rows,
+      cols,
+      bounds: Bounds::Satisfies(Box::new(eq)),
+    });
+  }
+  if tokens.len() != 8 && tokens.len() != 10 {
+    return Err(OnelinerError::BadTokenCount(tokens.len()));
+  }
   let parse_f64 = |s: &str| -> Result<f64, OnelinerError> {
     let v: f64 = s.parse().map_err(|e: std::num::ParseFloatError| {
       OnelinerError::BadBound(s.to_owned(), e.to_string())
@@ -509,6 +601,9 @@ pub(crate) fn run_oneliner<P: AsRef<Path>>(
   path: P,
 ) -> Result<Vec<CellResult>, OnelinerError> {
   let f06 = OnePassParser::parse_file(path).map_err(OnelinerError::Parser)?;
+  if let Bounds::Satisfies(eq) = &spec.bounds {
+    return Ok(run_oneliner_satisfies(&f06, spec, eq));
+  }
   let mut results = Vec::with_capacity(spec.cell_count());
   for &subcase in &spec.subcases {
     for row in &spec.rows {
@@ -532,6 +627,95 @@ pub(crate) fn run_oneliner<P: AsRef<Path>>(
   return Ok(results);
 }
 
+/// Two-pass execution for `satisfies`: first resolve every cell to a value
+/// (or per-cell error), then compute pool stats over the finite values and
+/// evaluate the equation per cell.
+fn run_oneliner_satisfies(
+  f06: &F06File,
+  spec: &OnelinerSpec,
+  eq: &Equation,
+) -> Vec<CellResult> {
+  // Pass 1: resolve each cell to either a value or a per-cell error.
+  struct Pending {
+    subcase: usize,
+    row: String,
+    col: String,
+    resolved: Result<F06Number, OnelinerError>,
+  }
+  let mut pending: Vec<Pending> = Vec::with_capacity(spec.cell_count());
+  for &subcase in &spec.subcases {
+    for row in &spec.rows {
+      for col in &spec.cols {
+        let resolved = resolve_cell_value(f06, spec.block, subcase, row, col);
+        pending.push(Pending {
+          subcase,
+          row: row.clone(),
+          col: col.clone(),
+          resolved,
+        });
+      }
+    }
+  }
+  // Compute pool stats over finite, successfully-resolved values.
+  let pool = pending
+    .iter()
+    .filter_map(|p| p.resolved.as_ref().ok().map(|v| (*v).into()));
+  let stats = Stats::from_values(pool);
+  // Pass 2: evaluate the equation per cell.
+  let mut results = Vec::with_capacity(pending.len());
+  for p in pending {
+    let outcome = match (p.resolved, &stats) {
+      (Err(e), _) => CellOutcome::Error(e),
+      (Ok(_), None) => CellOutcome::Error(OnelinerError::EmptyEquationPool),
+      (Ok(v), Some(st)) => {
+        let x: f64 = v.into();
+        match eq.evaluate(x, None, st, None) {
+          EvalOutcome::Pass { .. } => CellOutcome::Pass(v),
+          EvalOutcome::Fail { .. } => CellOutcome::Fail(v),
+          EvalOutcome::Error { message } => CellOutcome::Error(
+            OnelinerError::EquationParse(EquationError::Parse {
+              raw: eq.raw().to_owned(),
+              message,
+            }),
+          ),
+        }
+      }
+    };
+    results.push(CellResult {
+      subcase: p.subcase,
+      block: spec.block,
+      row: p.row,
+      col: p.col,
+      outcome,
+    });
+  }
+  return results;
+}
+
+/// Resolves a single cell to its `F06Number` value or a per-cell error,
+/// without applying any bounds. Used by the `satisfies` two-pass runner.
+fn resolve_cell_value(
+  f06: &F06File,
+  block: BlockType,
+  subcase: usize,
+  row: &str,
+  col: &str,
+) -> Result<F06Number, OnelinerError> {
+  let extraction = resolve_cell_extraction(block, subcase, row, col)?;
+  let mut hits = extraction.lookup(f06);
+  let first = hits.next().ok_or_else(|| OnelinerError::NoMatch {
+    subcase,
+    block,
+    row: row.to_owned(),
+    col: col.to_owned(),
+  })?;
+  let extra = hits.take(64).count();
+  if extra > 0 {
+    return Err(OnelinerError::Ambiguous(1 + extra));
+  }
+  return first.get_from(f06).map_err(OnelinerError::Extraction);
+}
+
 /// Exit code for an [`OnelinerError`], following the contract documented on
 /// the `--oneliner` CLI flag.
 pub(crate) fn error_exit_code(err: &OnelinerError) -> i32 {
@@ -549,11 +733,13 @@ pub(crate) fn error_exit_code(err: &OnelinerError) -> i32 {
     | OnelinerError::BadFloorLiteral(_)
     | OnelinerError::FloorWithoutPercent(_)
     | OnelinerError::EmptyListEntry { .. }
-    | OnelinerError::Validation(_) => 3,
+    | OnelinerError::Validation(_)
+    | OnelinerError::EquationParse(_) => 3,
     OnelinerError::Parser(_) => 4,
     OnelinerError::Extraction(_)
     | OnelinerError::NoMatch { .. }
-    | OnelinerError::Ambiguous(_) => 2,
+    | OnelinerError::Ambiguous(_)
+    | OnelinerError::EmptyEquationPool => 2,
   };
 }
 
@@ -890,5 +1076,45 @@ mod tests {
       parse_oneliner("subcase 1 displacements grid_1 tx 10 \u{00b1} -5%"),
       Err(OnelinerError::NegativePercent(_)),
     ));
+  }
+
+  #[test]
+  fn parses_satisfies_form() {
+    let s =
+      parse_oneliner("subcase 1 displacements grid_1 tx satisfies abs(x) < 1")
+        .unwrap();
+    assert!(matches!(s.bounds, Bounds::Satisfies(_)));
+  }
+
+  #[test]
+  fn satisfies_is_case_insensitive() {
+    let s =
+      parse_oneliner("subcase 1 displacements grid_1 tx SATISFIES x == max")
+        .unwrap();
+    assert!(matches!(s.bounds, Bounds::Satisfies(_)));
+  }
+
+  #[test]
+  fn satisfies_with_comma_lists() {
+    let s = parse_oneliner(
+      "subcase 1,2 displacements 11,12 tx,ty satisfies abs(x) <= 3*std",
+    )
+    .unwrap();
+    assert!(matches!(s.bounds, Bounds::Satisfies(_)));
+    assert_eq!(s.cell_count(), 8);
+  }
+
+  #[test]
+  fn satisfies_rejects_missing_expression() {
+    assert!(matches!(
+      parse_oneliner("subcase 1 displacements grid_1 tx satisfies"),
+      Err(OnelinerError::BadTokenCount(6)),
+    ));
+  }
+
+  #[test]
+  fn satisfies_rejects_bad_equation() {
+    let r = parse_oneliner("subcase 1 displacements grid_1 tx satisfies y > 0");
+    assert!(matches!(r, Err(OnelinerError::EquationParse(_))));
   }
 }

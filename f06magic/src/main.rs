@@ -25,7 +25,7 @@ use crate::oneliner::{
 };
 use crate::script::Script;
 use crate::script::check::{CheckFailure, CheckRule};
-use crate::script::comparison::FlaggedDetail;
+use crate::script::comparison::{FlagReason2, FlaggedDetail};
 
 /// f06magic command-line interface.
 #[derive(Parser, Debug)]
@@ -48,8 +48,28 @@ struct Cli {
   /// Spec format (must be quoted on the shell):
   ///
   ///   subcase <N> <block> <row> <col> <A> <to|delta> <B>
+  ///   subcase <N> <block> <row> <col> <A> <percent|pct> <P> [floor <E>]
+  ///   subcase <N> <block> <row> <col> <A> ± <B>        (alias: +-)
+  ///   subcase <N> <block> <row> <col> <A> ± <P>% [floor <E>]
+  ///   subcase <N> <block> <row> <col> satisfies <equation ...>
   ///
-  /// `to` is an inclusive range; `delta` is `[A - B, A + B]` (B >= 0).
+  /// `to` is an inclusive range; `delta` / `±` is `[A - B, A + B]` (B >= 0);
+  /// `percent` / `pct` matches `100*|test/A - 1| <= P`; `floor <E>` lets near-
+  /// zero pairs pass when both `|A|` and `|test|` fall below `E`.
+  ///
+  /// `satisfies <expr>` evaluates a user-supplied boolean equation per cell;
+  /// the cell's value is bound to `x` (or `t`). Available operators include
+  /// `+ - * / % ** ^`, comparisons `== != < <= > >=`, and boolean
+  /// `! && ||` (or `not`/`and`/`or`/`xor`). Functions: `abs`, `sqrt`,
+  /// `exp`, `ln`, `log(base, val)`, `sin/cos/tan`, `ceil`, `floor`,
+  /// `round`, `sign`, `int`, `min(a, b, ...)`, `max(a, b, ...)`. Constants:
+  /// `pi`, `e`. The cartesian-product pool also exposes magic stat
+  /// variables: `min`, `max`, `mina`, `maxa` (min / max of absolute value),
+  /// `avg`, `sum`, `std` (= `stdp`), `stds`, `n`. PASS iff the expression
+  /// evaluates to a finite, non-zero value.
+  ///
+  /// Subcase, row and col tokens accept comma-separated lists; the spec
+  /// is then run on the cartesian product (one PASS/FAIL per cell).
   ///
   /// Prints PASS/FAIL/ERROR on stdout and the value (or error) on stderr.
   /// Exit codes (oneliner): 0 PASS, 1 FAIL, 2 extraction error,
@@ -135,11 +155,22 @@ fn fmt_comparison_failure(di: &DatumIndex, det: &FlaggedDetail) -> String {
     di.col,
     det.ref_val,
     det.test_val,
-    fmt_reason(&det.reason),
+    fmt_reason2(&det.reason),
   );
 }
 
-/// Formats a [`FlagReason`] into its bracketed metric, e.g.
+/// Formats a magic-side [`FlagReason2`] for verbose output.
+fn fmt_reason2(reason: &FlagReason2) -> String {
+  return match reason {
+    FlagReason2::Criteria(r) => fmt_reason(r),
+    FlagReason2::Equation { raw, value, error } => match error {
+      Some(msg) => format!("equation \"{raw}\" error: {msg}"),
+      None => format!("equation \"{raw}\" = {value}"),
+    },
+  };
+}
+
+/// Formats a libf06 [`FlagReason`] into its bracketed metric, e.g.
 /// `difference=1.0e-3 > 1.0e-6` or `percent=5.2 > 1.0`.
 fn fmt_reason(reason: &FlagReason) -> String {
   return match reason {
@@ -184,6 +215,10 @@ fn fmt_check_failure(di: &DatumIndex, fail: &CheckFailure) -> String {
     CheckRule::Ranges { idx, lo, hi } => {
       format!("ranges[{idx}]: outside [{lo}, {hi}]")
     }
+    CheckRule::Equation { raw, value, error } => match error {
+      Some(msg) => format!("equation \"{raw}\" error: {msg}"),
+      None => format!("equation \"{raw}\" = {value}"),
+    },
   };
   return format!(
     "subcase={} block={} row={} col={}: value={}  [{rule}]",

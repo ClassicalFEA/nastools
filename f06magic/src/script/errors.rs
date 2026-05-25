@@ -5,6 +5,7 @@ use std::fmt::Display;
 
 use f06::prelude::ParseLenientError;
 
+use crate::script::equation::EquationError;
 use crate::script::index::IndexAxis;
 
 /// Errors raised when a script is being prepared (i.e. simple extractions
@@ -36,6 +37,16 @@ pub(crate) enum ScriptValidationError {
     /// The all-caps type names that the configured blocks accept.
     expected: Vec<String>,
   },
+  /// A `[[check]]` or `[[comparison]]` table contains an `equation` field
+  /// that could not be parsed (or referenced an out-of-scope variable).
+  Equation {
+    /// Whether the equation came from a check or a comparison.
+    kind: &'static str,
+    /// Name of the offending check/comparison.
+    name: String,
+    /// Underlying equation error.
+    cause: EquationError,
+  },
 }
 
 impl Display for ScriptValidationError {
@@ -62,6 +73,10 @@ impl Display for ScriptValidationError {
          but the configured block(s) expect one of: {}",
         expected.join(", ")
       ),
+      Self::Equation { kind, name, cause } => write!(
+        f,
+        "{kind} \"{name}\": {cause}",
+      ),
     };
   }
 }
@@ -79,6 +94,14 @@ pub(crate) enum ComparisonRunError {
   FileNotFound(String),
   /// Could not find a comparison with a given name.
   ComparisonNotFound(String),
+  /// The comparison set an `equation` but the matched pool (on one or both
+  /// sides) ended up empty after NaN/Inf skipping.
+  EmptyEquationPool {
+    /// Name of the comparison.
+    name: String,
+    /// Which side ("reference" or "test") had an empty pool. May be both.
+    side: &'static str,
+  },
   /// Some other error
   AnotherError(Box<dyn Error>),
 }
@@ -92,6 +115,16 @@ pub(crate) enum CheckRunError {
   CheckNotFound(String),
   /// Could not find a file with the given name.
   FileNotFound(String),
+  /// The check set an `equation` but the (file, extraction) pool was
+  /// empty after NaN/Inf skipping.
+  EmptyEquationPool {
+    /// Name of the check.
+    name: String,
+    /// File name.
+    file: String,
+    /// Extraction name.
+    extraction: String,
+  },
   /// Some other error
   AnotherError(Box<dyn Error>),
 }

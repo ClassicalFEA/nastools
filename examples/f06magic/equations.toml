@@ -1,0 +1,71 @@
+# Examples of the `equation` field on checks and comparisons.
+#
+# Equation grammar (see `f06magic/src/script/equation.rs` for full details):
+#
+# * Variables (Check scope):       x (alias t)
+# * Variables (Comparison scope):  x (alias t), y (alias r)
+# * Magic stat vars (Check):       min, max, mina, maxa, avg, sum,
+#                                  std (= stdp), stds, n
+# * Magic stat vars (Comparison):  prefixed with x*/t* (test pool) or
+#                                  y*/r* (reference pool), e.g. `xmin`,
+#                                  `rmaxa`, `tstd`, `ravg`.
+# * Operators:  arithmetic (+ - * / %), power (** or ^), comparisons
+#               (== != < <= > >=), boolean (! && || / not and or xor).
+# * Constants:  pi, e.
+# * Functions:  abs, sqrt, exp, ln, log(base, val), sin/cos/tan, ceil,
+#               floor, round, sign, int, min(a, b, ...), max(a, b, ...).
+# * Case-insensitive; whole expression is lowercased before parsing.
+# * PASS iff the expression evaluates to a finite, non-zero value.
+
+[files]
+mystran_all_elem = "examples/mystran/SB-ALL-ELEM-TEST.F06"
+scnastran_all_elem = "examples/scnastran/SB-ALL-ELEM-TEST_scnas_postexport.f06"
+
+[[extraction]]
+name = "nodal translations"
+block = "displacements"
+cols = ["tx", "ty", "tz"]
+
+[[extraction]]
+name = "bar axial"
+block = "bar_stresses"
+cols = ["axial"]
+
+# A check using a user-defined boolean predicate. `formula` and `predicate`
+# are aliases for `equation`.
+[[check]]
+name = "translations within 3 sigma of the pool average"
+file = "mystran_all_elem"
+extraction = "nodal translations"
+equation = "x >= avg - 3*std and x <= avg + 3*std"
+
+# A check that uses the new `mina`/`maxa` magic variables (min/max of the
+# absolute values across the extraction).
+[[check]]
+name = "translations have bounded absolute value"
+file = "mystran_all_elem"
+extraction = "nodal translations"
+equation = "abs(x) >= mina and abs(x) <= maxa"
+
+# A check showcasing both power operators (`**` and `^` are equivalent) as
+# well as symbol-form boolean operators.
+[[check]]
+name = "bar axial has bounded square"
+file = "mystran_all_elem"
+extraction = "bar axial"
+formula = "(x**2 <= maxa^2) && !(x != x)"
+
+# A criteria set is still required for a comparison; equations run *after*
+# the criteria, AND'd into the result (a value flagged by either fails).
+[[criteria]]
+name = "must be equal"
+max_difference = 0.0
+
+# A comparison using both x and y, plus a reference-pool stat (`rmaxa`).
+[[comparison]]
+name = "translations close in absolute terms"
+reference_f06 = "scnastran_all_elem"
+test_f06 = "mystran_all_elem"
+extraction = "nodal translations"
+criteria = "must be equal"
+predicate = "abs(x - y) <= 1e-9 + 0.01 * rmaxa"
