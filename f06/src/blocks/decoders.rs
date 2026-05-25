@@ -654,7 +654,8 @@ impl BlockDecoder for QuadForcesDecoder {
       .collect::<Vec<_>>();
     match self.flavour.solver {
       Some(Solver::Mystran) => {
-        if let Some(eid) = ints.first() {
+        if let Some(LineField::Integer(eid)) = fields.first() {
+          // first token is an integer: this is an element centroid row
           self.cur_row.replace(PointInElement {
             element: ElementRef {
               eid: *eid as usize,
@@ -662,6 +663,17 @@ impl BlockDecoder for QuadForcesDecoder {
             },
             point: ElementPoint::Centroid,
           });
+        } else if let Some(gid) = ints.first() {
+          // first token is not an integer (e.g. "GRD"): corner row
+          if let Some(ri) = self.cur_row {
+            self.cur_row.replace(PointInElement {
+              element: ri.element,
+              point: ElementPoint::Corner((*gid as usize).into()),
+            });
+          } else {
+            warn!("GRD row without prior element row at {line}");
+            return LineResponse::Abort;
+          }
         } else {
           self.cur_row = None;
         }
