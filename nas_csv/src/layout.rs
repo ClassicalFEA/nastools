@@ -4,7 +4,9 @@
 
 use std::fmt::Display;
 
+#[cfg(feature = "clap")]
 use clap::builder::PossibleValue;
+#[cfg(feature = "clap")]
 use clap::ValueEnum;
 use f06::prelude::*;
 use f06::util::fmt_f64;
@@ -44,6 +46,7 @@ pub enum CsvBlockId {
 }
 
 // this impl allow numerical shorthands
+#[cfg(feature = "clap")]
 impl ValueEnum for CsvBlockId {
   fn value_variants<'a>() -> &'a [Self] {
     return Self::all();
@@ -80,6 +83,7 @@ impl CsvBlockId {
   }
 
   /// Returns the maximum length in bytes of all help strings.
+  #[cfg(feature = "clap")]
   pub(crate) const fn longest_help_len() -> usize {
     let mut max = 0;
     let mut i = 0;
@@ -122,6 +126,24 @@ impl CsvBlockId {
       Self::GridPointForces => "GridPointForces",
       Self::AppliedForces => "AppliedForces",
       Self::SpcForces => "SpcForces",
+      Self::Eigenvectors => "Eigenvectors",
+      Self::Eigenvalues => "Eigenvalues",
+    };
+  }
+
+  /// Returns a human-friendly, properly spaced/capitalised name for this
+  /// block ID, suitable for use in UI labels (e.g. `"SPC Forces"` rather
+  /// than `"SpcForces"`).
+  pub const fn display_name(&self) -> &'static str {
+    return match self {
+      Self::Metadata => "Metadata",
+      Self::Displacements => "Displacements",
+      Self::Stresses => "Stresses",
+      Self::Strains => "Strains",
+      Self::EngForces => "Engineering Forces",
+      Self::GridPointForces => "Grid Point Forces",
+      Self::AppliedForces => "Applied Forces",
+      Self::SpcForces => "SPC Forces",
       Self::Eigenvectors => "Eigenvectors",
       Self::Eigenvalues => "Eigenvalues",
     };

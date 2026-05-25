@@ -5,6 +5,7 @@ use std::collections::BTreeSet;
 use std::fmt::Display;
 use std::str::FromStr;
 
+#[cfg(feature = "clap")]
 use clap::{Args, ValueEnum};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -126,6 +127,7 @@ impl FromStr for DisjunctionBehaviour {
   }
 }
 
+#[cfg(feature = "clap")]
 impl ValueEnum for DisjunctionBehaviour {
   fn value_variants<'a>() -> &'a [Self] {
     return Self::all();
@@ -153,32 +155,33 @@ impl DisjunctionBehaviour {
 }
 
 /// Value testing/comparison criteria.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Args)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "clap", derive(Args))]
 pub struct Criteria {
   /// Test an absolute value difference?
-  #[arg(long, short = 'd')]
+  #[cfg_attr(feature = "clap", arg(long, short = 'd'))]
   pub difference: Option<f64>,
   /// Test a big-to-small ratio?
-  #[arg(long, short = 'r')]
+  #[cfg_attr(feature = "clap", arg(long, short = 'r'))]
   pub ratio: Option<f64>,
   /// Test a relative-percent error `100*|test/ref - 1|` against this
   /// tolerance? `a` (first argument to [`Criteria::check`]) is the reference.
-  #[arg(long, short = 'p')]
+  #[cfg_attr(feature = "clap", arg(long, short = 'p'))]
   pub percent: Option<f64>,
   /// Optional near-zero floor that gates the percent check. When both
   /// `|ref|` and `|test|` are below this value the percent check passes;
   /// when exactly one is below, the pair is flagged as a floor asymmetry.
   /// Ignored unless `percent` is also set. `None` is treated as `0.0`.
-  #[arg(long)]
+  #[cfg_attr(feature = "clap", arg(long))]
   pub percent_floor: Option<f64>,
   /// Check for NaNs?
-  #[arg(long)]
+  #[cfg_attr(feature = "clap", arg(long))]
   pub nan: bool,
   /// Check for infinities?
-  #[arg(long)]
+  #[cfg_attr(feature = "clap", arg(long))]
   pub inf: bool,
   /// Check for differing signs?
-  #[arg(long)]
+  #[cfg_attr(feature = "clap", arg(long))]
   pub sig: bool,
 }
 

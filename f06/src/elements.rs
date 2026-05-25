@@ -5,6 +5,7 @@
 use core::str::FromStr;
 use std::fmt::Display;
 
+#[cfg(feature = "clap")]
 use clap::ValueEnum;
 use serde::{Deserialize, Serialize};
 use serde_with::{DeserializeFromStr, SerializeDisplay};
@@ -35,10 +36,11 @@ macro_rules! gen_elems {
   ) => {
     /// Known element types.
     #[derive(
-      Copy, Clone, Debug, PartialEq, Eq, ValueEnum, SerializeDisplay,
+      Copy, Clone, Debug, PartialEq, Eq, SerializeDisplay,
       DeserializeFromStr,
     )]
-    #[clap(rename_all = "UPPER")]
+    #[cfg_attr(feature = "clap", derive(ValueEnum))]
+    #[cfg_attr(feature = "clap", clap(rename_all = "UPPER"))]
     #[allow(missing_docs)]
     #[non_exhaustive]
     pub enum ElementType {

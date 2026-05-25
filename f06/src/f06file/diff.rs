@@ -4,6 +4,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Display;
 
+#[cfg(feature = "clap")]
 use clap::Args;
 use serde::{Deserialize, Serialize};
 
@@ -50,18 +51,19 @@ impl Display for NonCompareReason {
 }
 
 /// This contains the settings for when you need to compare two files.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, Args)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "clap", derive(Args))]
 pub struct DiffSettings {
   /// The criteria for comparing numbers.
-  #[command(flatten)]
+  #[cfg_attr(feature = "clap", command(flatten))]
   pub criteria: Criteria,
   /// What to do with line disjunctions?
-  #[arg(short = 'x')]
-  #[clap(default_value = "zero")]
+  #[cfg_attr(feature = "clap", arg(short = 'x'))]
+  #[cfg_attr(feature = "clap", clap(default_value = "zero"))]
   pub dxn_behaviour: Option<DisjunctionBehaviour>,
   /// Limit for the number of flagged values per block (0 for no limit)
-  #[clap(default_value = "0")]
-  #[arg(short = 'F')]
+  #[cfg_attr(feature = "clap", clap(default_value = "0"))]
+  #[cfg_attr(feature = "clap", arg(short = 'F'))]
   pub max_flags: Option<usize>,
 }
 

@@ -3,6 +3,17 @@ resolver = "2"
 members = [
 	"f06",
 	"f06csv",
+	"f06csv_web",
+	"f06csvdiff",
+	"f06diff",
+	"f06info",
+	"f06magic",
+	"nas_csv",
+	"nastester",
+]
+default-members = [
+	"f06",
+	"f06csv",
 	"f06csvdiff",
 	"f06diff",
 	"f06info",
