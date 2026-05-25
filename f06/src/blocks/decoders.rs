@@ -472,7 +472,7 @@ impl BlockDecoder for QuadStressesDecoder {
           let corner_index = match point {
             ElementPoint::Corner(_) => {
               let is_new_element =
-                self.cur_row.map_or(true, |r| r.element.eid != eid);
+                self.cur_row.is_none_or(|r| r.element.eid != eid);
               if is_new_element {
                 self.corner_counter = 1;
               } else {
@@ -527,7 +527,7 @@ impl BlockDecoder for QuadStressesDecoder {
           let corner_index = match point {
             ElementPoint::Corner(_) => {
               let is_new_element =
-                self.cur_row.map_or(true, |r| r.element.eid != eid);
+                self.cur_row.is_none_or(|r| r.element.eid != eid);
               if is_new_element {
                 self.corner_counter = 1;
               } else {
