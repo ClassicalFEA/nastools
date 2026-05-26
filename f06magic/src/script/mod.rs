@@ -15,14 +15,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::script::check::{Check, CheckResult};
 use crate::script::comparison::{
-  Comparison, ComparisonResult, FlagReason2, FlaggedDetail,
+  Comparison, ComparisonResult, EmptySide, FlagReason2, FlaggedDetail,
 };
 use crate::script::criteria::SimpleCriteria;
 use crate::script::equation::{Equation, EvalOutcome, Scope, Stats};
 use crate::script::errors::{
   CheckRunError, ComparisonRunError, ScriptValidationError,
 };
-use crate::script::extraction::SimpleExtraction;
+use crate::script::extraction::{ExtractionFlags, SimpleExtraction};
 
 /// An f06magic script. Contains decks, extractions, criteria, and tests.
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
@@ -53,13 +53,14 @@ impl Script {
       files.insert(n, read);
     }
     let mut extractions: BTreeMap<String, Extraction> = BTreeMap::new();
-    let mut extraction_allow_empty: BTreeMap<String, bool> = BTreeMap::new();
+    let mut extraction_flags: BTreeMap<String, ExtractionFlags> =
+      BTreeMap::new();
     for simple in self.extractions {
       let name = simple.name.clone();
-      let allow_empty = simple.allow_empty;
+      let flags = simple.flags();
       let resolved = simple.resolve()?;
       extractions.insert(name.clone(), resolved);
-      extraction_allow_empty.insert(name, allow_empty);
+      extraction_flags.insert(name, flags);
     }
     // Parse equations, if any, into Equation objects keyed by check /
     // comparison name. Empty/missing equations stay absent from these maps.
@@ -96,7 +97,7 @@ impl Script {
     return Ok(ReadyScript {
       files,
       extractions,
-      extraction_allow_empty,
+      extraction_flags,
       criteria: self
         .criteria
         .into_iter()
@@ -157,8 +158,9 @@ pub(crate) struct ReadyScript {
   pub(crate) files: BTreeMap<String, F06File>,
   /// The extractions within this script.
   pub(crate) extractions: BTreeMap<String, Extraction>,
-  /// Per-extraction `allow_empty` flag (true ⇒ empty match is OK).
-  pub(crate) extraction_allow_empty: BTreeMap<String, bool>,
+  /// Per-extraction empty-match flags (`allow_empty`,
+  /// `allow_reference_empty`, `allow_test_empty`).
+  pub(crate) extraction_flags: BTreeMap<String, ExtractionFlags>,
   /// The comparison criteria within this script.
   pub(crate) criteria: BTreeMap<String, SimpleCriteria>,
   /// The comparisons within this script.
@@ -204,7 +206,7 @@ impl ReadyScript {
       .clone()
       .into();
     let mut indices: BTreeSet<DatumIndex> = BTreeSet::new();
-    let mut empty_extractions: Vec<String> = Vec::new();
+    let mut empty_extractions: Vec<(String, EmptySide)> = Vec::new();
     for en in comparison.extractions.clone().into_iter() {
       let ex = self
         .extractions
@@ -212,13 +214,17 @@ impl ReadyScript {
         .ok_or(ComparisonRunError::ExtractionNotFound(en.clone()))?;
       let ref_hits: Vec<DatumIndex> = ex.lookup(ref_file).collect();
       let test_hits: Vec<DatumIndex> = ex.lookup(test_file).collect();
-      let allow_empty = self
-        .extraction_allow_empty
-        .get(&en)
-        .copied()
-        .unwrap_or(true);
-      if !allow_empty && ref_hits.is_empty() && test_hits.is_empty() {
-        empty_extractions.push(en.clone());
+      let flags = self.extraction_flags.get(&en).copied().unwrap_or_default();
+      // Each flag is checked independently so the user gets one
+      // violation per condition that actually fires.
+      if !flags.allow_reference_empty && ref_hits.is_empty() {
+        empty_extractions.push((en.clone(), EmptySide::Reference));
+      }
+      if !flags.allow_test_empty && test_hits.is_empty() {
+        empty_extractions.push((en.clone(), EmptySide::Test));
+      }
+      if !flags.allow_empty && ref_hits.is_empty() && test_hits.is_empty() {
+        empty_extractions.push((en.clone(), EmptySide::Both));
       }
       indices.extend(ref_hits);
       indices.extend(test_hits);
@@ -331,8 +337,11 @@ impl ReadyScript {
           .lookup(f06)
           .map(|di| (di, di.get_from(f06).unwrap()))
           .collect();
-        let allow_empty =
-          self.extraction_allow_empty.get(en).copied().unwrap_or(true);
+        let allow_empty = self
+          .extraction_flags
+          .get(en)
+          .map(|f| f.allow_empty)
+          .unwrap_or(true);
         // An empty pool silently skips the equation (nothing to evaluate
         // against). The pair as a whole only fails if `allow_empty` is
         // false, in which case we flag it via `empty_violation`.

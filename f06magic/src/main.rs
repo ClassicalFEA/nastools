@@ -108,14 +108,22 @@ fn run_script<P: AsRef<Path>>(
     println!("  => checked: {}", res.checked.len());
     println!("  => flagged: {}", res.flagged.len());
     if !res.empty_extractions.is_empty() {
+      let listed: Vec<String> = res
+        .empty_extractions
+        .iter()
+        .map(|(n, s)| format!("{n} ({})", s.label()))
+        .collect();
       println!(
-        "  => empty extractions (allow_empty=false): {}",
-        res.empty_extractions.join(", ")
+        "  => empty extractions (allow_*_empty=false): {}",
+        listed.join(", ")
       );
     }
     if verbose {
-      for en in &res.empty_extractions {
-        eprintln!("  - extraction \"{en}\": matched zero datums");
+      for (en, side) in &res.empty_extractions {
+        eprintln!(
+          "  - extraction \"{en}\": matched zero datums on {} side",
+          side.label()
+        );
       }
       for (di, det) in res.flagged.iter() {
         eprintln!("  - {}", fmt_comparison_failure(di, det));

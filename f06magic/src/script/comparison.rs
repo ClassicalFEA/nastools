@@ -58,14 +58,43 @@ pub(crate) struct FlaggedDetail {
   pub(crate) reason: FlagReason2,
 }
 
+/// Which side of a comparison triggered an `allow_*_empty` violation for a
+/// given extraction.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum EmptySide {
+  /// The reference file matched zero datums (and the extraction had
+  /// `allow_reference_empty = false`).
+  Reference,
+  /// The test file matched zero datums (and the extraction had
+  /// `allow_test_empty = false`).
+  Test,
+  /// Both files matched zero datums (and the extraction had
+  /// `allow_empty = false`).
+  Both,
+}
+
+impl EmptySide {
+  /// Short human-readable label used in CLI output.
+  pub(crate) fn label(self) -> &'static str {
+    return match self {
+      Self::Reference => "reference",
+      Self::Test => "test",
+      Self::Both => "both",
+    };
+  }
+}
+
 /// The results from a run.
 pub(crate) struct ComparisonResult {
   /// Indices checked.
   pub(crate) checked: BTreeSet<DatumIndex>,
   /// Indices flagged, mapped to per-datum detail.
   pub(crate) flagged: BTreeMap<DatumIndex, FlaggedDetail>,
-  /// Names of extractions referenced by this comparison that resolved to an
-  /// empty set of datums while having `allow_empty = false`. Each entry
-  /// counts as one comparison-level failure on top of `flagged`.
-  pub(crate) empty_extractions: Vec<String>,
+  /// Extractions referenced by this comparison that hit an `allow_*_empty`
+  /// violation, paired with the side that fired. A single extraction may
+  /// appear multiple times when more than one flag fires (e.g. both
+  /// `allow_reference_empty = false` and `allow_test_empty = false` on a
+  /// totally-empty extraction). Each entry counts as one comparison-level
+  /// failure on top of `flagged`.
+  pub(crate) empty_extractions: Vec<(String, EmptySide)>,
 }
