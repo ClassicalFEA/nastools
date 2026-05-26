@@ -102,6 +102,10 @@ pub(crate) struct PartialCheckResult {
   pub(crate) checked: BTreeSet<DatumIndex>,
   /// Indices flagged, mapped to per-datum detail.
   pub(crate) flagged: BTreeMap<DatumIndex, CheckFailure>,
+  /// `true` iff this (file, extraction) pair matched zero datums while the
+  /// extraction had `allow_empty = false`. Counts as one check-level
+  /// failure on top of `flagged`.
+  pub(crate) empty_violation: bool,
 }
 
 /// The full results from a check.

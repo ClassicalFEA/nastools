@@ -6,9 +6,14 @@ use crate::utils::{AnyAmount, NumListRange};
 use f06::prelude::*;
 use serde::{Deserialize, Serialize};
 
+/// Returns the default value of `allow_empty` (true).
+fn default_allow_empty() -> bool {
+  return true;
+}
+
 /// Represents a procedure for extracting values from an F06. Converts into a
 /// real libf06 Extraction.
-#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct SimpleExtraction {
   /// Extraction name -- must be unique.
@@ -49,6 +54,30 @@ pub(crate) struct SimpleExtraction {
   /// Raw row indices. Use only when `rows` cannot express the filter.
   #[serde(default)]
   pub(crate) raw_rows: AnyAmount<usize>,
+  /// If `true` (the default), an extraction that matches zero datums is
+  /// silently allowed: the surrounding check/comparison still PASSES.
+  /// If `false`, an empty match is reported as a failure of the check or
+  /// comparison that referenced this extraction.
+  #[serde(default = "default_allow_empty")]
+  pub(crate) allow_empty: bool,
+}
+
+impl Default for SimpleExtraction {
+  fn default() -> Self {
+    return Self {
+      name: String::new(),
+      blocks: AnyAmount::default(),
+      subcases: NumListRange::default(),
+      nodes: NumListRange::default(),
+      elements: NumListRange::default(),
+      element_types: AnyAmount::default(),
+      cols: AnyAmount::default(),
+      rows: AnyAmount::default(),
+      raw_cols: AnyAmount::default(),
+      raw_rows: AnyAmount::default(),
+      allow_empty: true,
+    };
+  }
 }
 
 impl SimpleExtraction {

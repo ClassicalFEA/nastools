@@ -53,10 +53,13 @@ impl Script {
       files.insert(n, read);
     }
     let mut extractions: BTreeMap<String, Extraction> = BTreeMap::new();
+    let mut extraction_allow_empty: BTreeMap<String, bool> = BTreeMap::new();
     for simple in self.extractions {
       let name = simple.name.clone();
+      let allow_empty = simple.allow_empty;
       let resolved = simple.resolve()?;
-      extractions.insert(name, resolved);
+      extractions.insert(name.clone(), resolved);
+      extraction_allow_empty.insert(name, allow_empty);
     }
     // Parse equations, if any, into Equation objects keyed by check /
     // comparison name. Empty/missing equations stay absent from these maps.
@@ -93,6 +96,7 @@ impl Script {
     return Ok(ReadyScript {
       files,
       extractions,
+      extraction_allow_empty,
       criteria: self
         .criteria
         .into_iter()
@@ -153,6 +157,8 @@ pub(crate) struct ReadyScript {
   pub(crate) files: BTreeMap<String, F06File>,
   /// The extractions within this script.
   pub(crate) extractions: BTreeMap<String, Extraction>,
+  /// Per-extraction `allow_empty` flag (true ⇒ empty match is OK).
+  pub(crate) extraction_allow_empty: BTreeMap<String, bool>,
   /// The comparison criteria within this script.
   pub(crate) criteria: BTreeMap<String, SimpleCriteria>,
   /// The comparisons within this script.
@@ -198,20 +204,33 @@ impl ReadyScript {
       .clone()
       .into();
     let mut indices: BTreeSet<DatumIndex> = BTreeSet::new();
+    let mut empty_extractions: Vec<String> = Vec::new();
     for en in comparison.extractions.clone().into_iter() {
       let ex = self
         .extractions
         .get(&en)
         .ok_or(ComparisonRunError::ExtractionNotFound(en.clone()))?;
-      indices.extend(ex.lookup(ref_file));
-      indices.extend(ex.lookup(test_file));
+      let ref_hits: Vec<DatumIndex> = ex.lookup(ref_file).collect();
+      let test_hits: Vec<DatumIndex> = ex.lookup(test_file).collect();
+      let allow_empty = self
+        .extraction_allow_empty
+        .get(&en)
+        .copied()
+        .unwrap_or(true);
+      if !allow_empty && ref_hits.is_empty() && test_hits.is_empty() {
+        empty_extractions.push(en.clone());
+      }
+      indices.extend(ref_hits);
+      indices.extend(test_hits);
     }
     // If an equation is attached, precompute per-side stats over the
     // union of indices. Missing-in-one-file readings substitute 0.0
-    // (matching the same convention as the criteria pass below).
+    // (matching the same convention as the criteria pass below). When the
+    // pool is empty the equation is silently skipped: there are no values
+    // to evaluate against, so nothing can fail it.
     let equation = self.comparison_equations.get(name);
     let (ref_stats, test_stats): (Option<Stats>, Option<Stats>) =
-      if equation.is_some() {
+      if equation.is_some() && !indices.is_empty() {
         let ref_vals: Vec<f64> = indices
           .iter()
           .map(|i| i.get_from(ref_file).unwrap_or(F06Number::Real(0.0)).into())
@@ -220,21 +239,7 @@ impl ReadyScript {
           .iter()
           .map(|i| i.get_from(test_file).unwrap_or(F06Number::Real(0.0)).into())
           .collect();
-        let rs = Stats::from_values(ref_vals);
-        let ts = Stats::from_values(test_vals);
-        if rs.is_none() {
-          return Err(ComparisonRunError::EmptyEquationPool {
-            name: name.to_owned(),
-            side: "reference",
-          });
-        }
-        if ts.is_none() {
-          return Err(ComparisonRunError::EmptyEquationPool {
-            name: name.to_owned(),
-            side: "test",
-          });
-        }
-        (rs, ts)
+        (Stats::from_values(ref_vals), Stats::from_values(test_vals))
       } else {
         (None, None)
       };
@@ -294,6 +299,7 @@ impl ReadyScript {
     return Ok(ComparisonResult {
       checked: indices,
       flagged,
+      empty_extractions,
     });
   }
 
@@ -325,21 +331,21 @@ impl ReadyScript {
           .lookup(f06)
           .map(|di| (di, di.get_from(f06).unwrap()))
           .collect();
-        let stats: Option<Stats> = if equation.is_some() {
-          let s =
-            Stats::from_values(collected.iter().map(|(_, n)| f64::from(*n)));
-          if s.is_none() {
-            return Err(CheckRunError::EmptyEquationPool {
-              name: name.to_owned(),
-              file: f06_name.to_owned(),
-              extraction: en.to_owned(),
-            });
-          }
-          s
-        } else {
-          None
-        };
-        let pres = check.run_for(collected, equation, stats.as_ref());
+        let allow_empty =
+          self.extraction_allow_empty.get(en).copied().unwrap_or(true);
+        // An empty pool silently skips the equation (nothing to evaluate
+        // against). The pair as a whole only fails if `allow_empty` is
+        // false, in which case we flag it via `empty_violation`.
+        let stats: Option<Stats> =
+          if equation.is_some() && !collected.is_empty() {
+            Stats::from_values(collected.iter().map(|(_, n)| f64::from(*n)))
+          } else {
+            None
+          };
+        let mut pres = check.run_for(collected, equation, stats.as_ref());
+        if !allow_empty && pres.checked.is_empty() {
+          pres.empty_violation = true;
+        }
         results
           .per_pair
           .insert((f06_name.to_owned(), en.to_owned()), pres);

@@ -101,16 +101,22 @@ fn run_script<P: AsRef<Path>>(
   let mut flagged_total: usize = 0;
   for comp in script.comparisons.keys() {
     let res = script.run_comparison(comp)?;
-    let pass = if res.flagged.is_empty() {
-      "PASSED"
-    } else {
-      "FAILED"
-    };
-    flagged_total += res.flagged.len();
+    let total_failures = res.flagged.len() + res.empty_extractions.len();
+    let pass = if total_failures == 0 { "PASSED" } else { "FAILED" };
+    flagged_total += total_failures;
     println!("==> {comp}: {pass}");
     println!("  => checked: {}", res.checked.len());
     println!("  => flagged: {}", res.flagged.len());
+    if !res.empty_extractions.is_empty() {
+      println!(
+        "  => empty extractions (allow_empty=false): {}",
+        res.empty_extractions.join(", ")
+      );
+    }
     if verbose {
+      for en in &res.empty_extractions {
+        eprintln!("  - extraction \"{en}\": matched zero datums");
+      }
       for (di, det) in res.flagged.iter() {
         eprintln!("  - {}", fmt_comparison_failure(di, det));
       }
@@ -120,16 +126,25 @@ fn run_script<P: AsRef<Path>>(
     let res = script.run_check(ck)?;
     println!("==> {ck}:");
     for ((f, ex), rp) in res.per_pair.iter() {
-      let pass = if rp.flagged.is_empty() {
-        "PASSED"
-      } else {
-        "FAILED"
-      };
+      let extra = if rp.empty_violation { 1 } else { 0 };
+      let total_failures = rp.flagged.len() + extra;
+      let pass = if total_failures == 0 { "PASSED" } else { "FAILED" };
       let a = rp.flagged.len();
       let b = rp.checked.len();
-      flagged_total += a;
-      println!("  => {f}, {ex}: {pass} ({a}/{b} flagged)");
+      flagged_total += total_failures;
+      if rp.empty_violation {
+        println!(
+          "  => {f}, {ex}: {pass} ({a}/{b} flagged, extraction empty)"
+        );
+      } else {
+        println!("  => {f}, {ex}: {pass} ({a}/{b} flagged)");
+      }
       if verbose {
+        if rp.empty_violation {
+          eprintln!(
+            "  - extraction \"{ex}\" on file \"{f}\": matched zero datums"
+          );
+        }
         for (di, fail) in rp.flagged.iter() {
           eprintln!("  - {}", fmt_check_failure(di, fail));
         }

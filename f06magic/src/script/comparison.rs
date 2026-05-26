@@ -64,4 +64,8 @@ pub(crate) struct ComparisonResult {
   pub(crate) checked: BTreeSet<DatumIndex>,
   /// Indices flagged, mapped to per-datum detail.
   pub(crate) flagged: BTreeMap<DatumIndex, FlaggedDetail>,
+  /// Names of extractions referenced by this comparison that resolved to an
+  /// empty set of datums while having `allow_empty = false`. Each entry
+  /// counts as one comparison-level failure on top of `flagged`.
+  pub(crate) empty_extractions: Vec<String>,
 }

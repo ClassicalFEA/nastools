@@ -94,14 +94,6 @@ pub(crate) enum ComparisonRunError {
   FileNotFound(String),
   /// Could not find a comparison with a given name.
   ComparisonNotFound(String),
-  /// The comparison set an `equation` but the matched pool (on one or both
-  /// sides) ended up empty after NaN/Inf skipping.
-  EmptyEquationPool {
-    /// Name of the comparison.
-    name: String,
-    /// Which side ("reference" or "test") had an empty pool. May be both.
-    side: &'static str,
-  },
   /// Some other error
   AnotherError(Box<dyn Error>),
 }
@@ -115,16 +107,6 @@ pub(crate) enum CheckRunError {
   CheckNotFound(String),
   /// Could not find a file with the given name.
   FileNotFound(String),
-  /// The check set an `equation` but the (file, extraction) pool was
-  /// empty after NaN/Inf skipping.
-  EmptyEquationPool {
-    /// Name of the check.
-    name: String,
-    /// File name.
-    file: String,
-    /// Extraction name.
-    extraction: String,
-  },
   /// Some other error
   AnotherError(Box<dyn Error>),
 }

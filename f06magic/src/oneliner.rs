@@ -533,6 +533,7 @@ fn make_extraction(
     }),
     raw_cols: AnyAmount::None,
     raw_rows: AnyAmount::None,
+    allow_empty: true,
   };
 }
 
