@@ -1,6 +1,6 @@
-# Examples of the `equation` field on checks and comparisons.
+# Examples of the `predicate` field on checks and comparisons.
 #
-# Equation grammar (see `f06magic/src/script/equation.rs` for full details):
+# Predicate grammar (see `f06magic/src/script/predicate.rs` for full details):
 #
 # * Variables (Check scope):       x (alias t)
 # * Variables (Comparison scope):  x (alias t), y (alias r)
@@ -31,13 +31,16 @@ name = "bar axial"
 block = "bar_stresses"
 cols = ["axial"]
 
-# A check using a user-defined boolean predicate. `formula` and `predicate`
-# are aliases for `equation`.
+# A check using a user-defined boolean predicate.
 [[check]]
 name = "translations within 3 sigma of the pool average"
 file = "mystran_all_elem"
 extraction = "nodal translations"
-equation = "x >= avg - 3*std and x <= avg + 3*std"
+predicate = "x >= avg - 3*std and x <= avg + 3*std"
+# Attach a debug printout: when a value is flagged, the labelled
+# expressions below are appended to the verbose `-v` failure line as
+# `printouts: delta_avg=... z_score=...`.
+printout = "translation context"
 
 # A check that uses the new `mina`/`maxa` magic variables (min/max of the
 # absolute values across the extraction).
@@ -45,7 +48,7 @@ equation = "x >= avg - 3*std and x <= avg + 3*std"
 name = "translations have bounded absolute value"
 file = "mystran_all_elem"
 extraction = "nodal translations"
-equation = "abs(x) >= mina and abs(x) <= maxa"
+predicate = "abs(x) >= mina and abs(x) <= maxa"
 
 # A check showcasing both power operators (`**` and `^` are equivalent) as
 # well as symbol-form boolean operators.
@@ -53,9 +56,9 @@ equation = "abs(x) >= mina and abs(x) <= maxa"
 name = "bar axial has bounded square"
 file = "mystran_all_elem"
 extraction = "bar axial"
-formula = "(x**2 <= maxa^2) && !(x != x)"
+predicate = "(x**2 <= maxa^2) && !(x != x)"
 
-# A criteria set is still required for a comparison; equations run *after*
+# A criteria set is still required for a comparison; predicates run *after*
 # the criteria, AND'd into the result (a value flagged by either fails).
 [[criteria]]
 name = "must be equal"
@@ -69,3 +72,25 @@ test_f06 = "mystran_all_elem"
 extraction = "nodal translations"
 criteria = "must be equal"
 predicate = "abs(x - y) <= 1e-9 + 0.01 * rmaxa"
+# Multiple printouts can be attached; their labels must be unique across
+# every printout referenced by this comparison.
+printouts = ["comparison context"]
+
+# Named bags of "debug expressions" referenced from checks / comparisons
+# above. Every key other than `name` is a `label = "expression"` pair,
+# evaluated per flagged datum and appended to the verbose `-v` failure
+# line as `printouts: label=value label=value ...`.
+[[printout]]
+name = "translation context"
+# In a check, `x` (the datum's value) and pool-wide stats are in scope.
+delta_avg = "x - avg"
+z_score = "(x - avg) / max(std, 1e-30)"
+
+[[printout]]
+name = "comparison context"
+# Reference-side variables (`y`, `r`, `r*`, `y*`) and prefixed stats
+# (`xavg`, `ravg`, ...) are only valid in comparisons. Using a
+# comparison-only printout from a check would be rejected at
+# script-prepare time.
+abs_diff = "abs(x - y)"
+ref_avg = "ravg"

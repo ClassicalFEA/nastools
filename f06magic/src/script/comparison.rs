@@ -5,6 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use f06::prelude::{DatumIndex, F06Number, FlagReason};
 use serde::{Deserialize, Serialize};
 
+use crate::script::printout::PrintoutValue;
 use crate::utils::OneOrMany;
 
 /// A comparison takes two or more F06 files, extractions, and a criteria set.
@@ -22,24 +23,28 @@ pub(crate) struct Comparison {
   /// Comparison criteria to apply.
   #[serde(alias = "criterion")]
   pub(crate) criteria: String,
-  /// User-supplied boolean equation; flags the datum when the equation
-  /// evaluates to `0.0` or `NaN`. See `script::equation` for the grammar.
-  #[serde(default, alias = "formula", alias = "predicate")]
-  pub(crate) equation: Option<String>,
+  /// User-supplied boolean predicate; flags the datum when the predicate
+  /// evaluates to `0.0` or `NaN`. See `script::predicate` for the grammar.
+  #[serde(default, alias = "equation", alias = "formula")]
+  pub(crate) predicate: Option<String>,
+  /// Names of `[[printout]]` blocks whose debug expressions are
+  /// evaluated for every flagged datum (verbose mode only).
+  #[serde(default, alias = "printout")]
+  pub(crate) printouts: Option<OneOrMany<String>>,
 }
 
 /// Why a datum was flagged within a comparison. Wraps libf06's
-/// [`FlagReason`] and adds an [`FlagReason2::Equation`] variant for
+/// [`FlagReason`] and adds an [`FlagReason2::Predicate`] variant for
 /// f06magic's user-supplied predicates.
 #[derive(Clone, Debug)]
 pub(crate) enum FlagReason2 {
   /// Flagged by the comparison criteria.
   Criteria(FlagReason),
-  /// Flagged by a user-supplied equation.
-  Equation {
-    /// Original equation source.
+  /// Flagged by a user-supplied predicate.
+  Predicate {
+    /// Original predicate source.
     raw: String,
-    /// Numeric result returned by the equation (`f64::NAN` when evaluation
+    /// Numeric result returned by the predicate (`f64::NAN` when evaluation
     /// itself failed).
     value: f64,
     /// Optional error message when fasteval2 itself returned an error.
@@ -56,6 +61,9 @@ pub(crate) struct FlaggedDetail {
   pub(crate) test_val: F06Number,
   /// Why the criteria flagged the pair.
   pub(crate) reason: FlagReason2,
+  /// Evaluated debug expressions from attached printouts, in the order
+  /// the printouts were referenced and the labels were defined.
+  pub(crate) printouts: Vec<(String, PrintoutValue)>,
 }
 
 /// Which side of a comparison triggered an `allow_*_empty` violation for a

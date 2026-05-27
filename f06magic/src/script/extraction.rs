@@ -1,7 +1,7 @@
 //! This simple sub-module implements the idea of an extraction.
 
 use crate::script::errors::ScriptValidationError;
-use crate::script::index::{resolve_index, IndexAxis, LenientNasIndex};
+use crate::script::index::{IndexAxis, LenientNasIndex, resolve_index};
 use crate::utils::{AnyAmount, NumListRange};
 use f06::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -138,51 +138,50 @@ impl SimpleExtraction {
   pub(crate) fn resolve(self) -> Result<Extraction, ScriptValidationError> {
     let block_types: Vec<BlockType> =
       (&self.blocks).into_iter().copied().collect();
-    let resolve_axis =
-      |entries: &AnyAmount<LenientNasIndex>,
-       axis: IndexAxis|
-       -> Result<Vec<NasIndex>, ScriptValidationError> {
-        let mut out: Vec<NasIndex> = Vec::new();
-        for lni in entries.into_iter() {
-          let parsed = resolve_index(lni, &block_types, axis).map_err(|e| {
-            ScriptValidationError::IndexParse {
+    let resolve_axis = |entries: &AnyAmount<LenientNasIndex>,
+                        axis: IndexAxis|
+     -> Result<Vec<NasIndex>, ScriptValidationError> {
+      let mut out: Vec<NasIndex> = Vec::new();
+      for lni in entries.into_iter() {
+        let parsed = resolve_index(lni, &block_types, axis).map_err(|e| {
+          ScriptValidationError::IndexParse {
+            extraction: self.name.clone(),
+            axis,
+            raw: lni.raw.clone(),
+            cause: Box::new(e),
+          }
+        })?;
+        if !block_types.is_empty() {
+          let kind_name = parsed.type_name();
+          let mut allowed_for_axis: Vec<&'static str> = block_types
+            .iter()
+            .map(|bt| match axis {
+              IndexAxis::Row => bt.row_index_kind(),
+              IndexAxis::Col => bt.col_index_kind(),
+              IndexAxis::Either => bt.row_index_kind(),
+            })
+            .collect();
+          if axis == IndexAxis::Either {
+            allowed_for_axis
+              .extend(block_types.iter().map(|bt| bt.col_index_kind()));
+          }
+          if !allowed_for_axis.contains(&kind_name) {
+            return Err(ScriptValidationError::IndexKindMismatch {
               extraction: self.name.clone(),
               axis,
               raw: lni.raw.clone(),
-              cause: e,
-            }
-          })?;
-          if !block_types.is_empty() {
-            let kind_name = parsed.type_name();
-            let mut allowed_for_axis: Vec<&'static str> = block_types
-              .iter()
-              .map(|bt| match axis {
-                IndexAxis::Row => bt.row_index_kind(),
-                IndexAxis::Col => bt.col_index_kind(),
-                IndexAxis::Either => bt.row_index_kind(),
-              })
-              .collect();
-            if axis == IndexAxis::Either {
-              allowed_for_axis
-                .extend(block_types.iter().map(|bt| bt.col_index_kind()));
-            }
-            if !allowed_for_axis.contains(&kind_name) {
-              return Err(ScriptValidationError::IndexKindMismatch {
-                extraction: self.name.clone(),
-                axis,
-                raw: lni.raw.clone(),
-                got: kind_name,
-                expected: allowed_for_axis
-                  .into_iter()
-                  .map(|s| s.to_owned())
-                  .collect(),
-              });
-            }
+              got: kind_name,
+              expected: allowed_for_axis
+                .into_iter()
+                .map(|s| s.to_owned())
+                .collect(),
+            });
           }
-          out.push(parsed);
         }
-        return Ok(out);
-      };
+        out.push(parsed);
+      }
+      return Ok(out);
+    };
     let cols = resolve_axis(&self.cols, IndexAxis::Col)?;
     let rows = resolve_axis(&self.rows, IndexAxis::Row)?;
     return Ok(Extraction {

@@ -5,8 +5,8 @@ use std::fmt::Display;
 
 use f06::prelude::ParseLenientError;
 
-use crate::script::equation::EquationError;
 use crate::script::index::IndexAxis;
+use crate::script::predicate::PredicateError;
 
 /// Errors raised when a script is being prepared (i.e. simple extractions
 /// resolved into real ones).
@@ -20,8 +20,9 @@ pub(crate) enum ScriptValidationError {
     axis: IndexAxis,
     /// The raw script string.
     raw: String,
-    /// The underlying parse error.
-    cause: ParseLenientError,
+    /// The underlying parse error. Boxed to keep the enum small
+    /// (see `clippy::result_large_err`).
+    cause: Box<ParseLenientError>,
   },
   /// A row/col entry parsed fine but its type does not match any of the
   /// configured block(s).
@@ -37,15 +38,56 @@ pub(crate) enum ScriptValidationError {
     /// The all-caps type names that the configured blocks accept.
     expected: Vec<String>,
   },
-  /// A `[[check]]` or `[[comparison]]` table contains an `equation` field
+  /// A `[[check]]` or `[[comparison]]` table contains an `predicate` field
   /// that could not be parsed (or referenced an out-of-scope variable).
-  Equation {
-    /// Whether the equation came from a check or a comparison.
+  Predicate {
+    /// Whether the predicate came from a check or a comparison.
     kind: &'static str,
     /// Name of the offending check/comparison.
     name: String,
-    /// Underlying equation error.
-    cause: EquationError,
+    /// Underlying predicate error. Boxed to keep the enum small
+    /// (see `clippy::result_large_err`).
+    cause: Box<PredicateError>,
+  },
+  /// Two or more `[[printout]]` tables share the same `name`.
+  PrintoutDuplicateName {
+    /// The duplicated printout name.
+    name: String,
+  },
+  /// A check/comparison's `printout`/`printouts` field references a
+  /// printout that does not exist.
+  PrintoutNotFound {
+    /// `"check"` or `"comparison"`.
+    kind: &'static str,
+    /// Name of the offending check/comparison.
+    site: String,
+    /// The printout name that was not found.
+    printout: String,
+  },
+  /// A single check/comparison references multiple printouts that share
+  /// a label, which would make the verbose `label=value` line ambiguous.
+  PrintoutLabelCollision {
+    /// `"check"` or `"comparison"`.
+    kind: &'static str,
+    /// Name of the offending check/comparison.
+    site: String,
+    /// The colliding label.
+    label: String,
+  },
+  /// A printout expression failed to parse (or used an out-of-scope
+  /// variable) at a specific usage site.
+  PrintoutPredicate {
+    /// `"check"` or `"comparison"`.
+    kind: &'static str,
+    /// Name of the using check/comparison.
+    site: String,
+    /// Name of the offending printout.
+    printout: String,
+    /// Label of the offending expression within the printout.
+    label: String,
+    /// Underlying predicate error. Boxed to keep the enum small
+    /// (see `clippy::result_large_err`).
+    cause: Box<PredicateError>,
   },
 }
 
@@ -73,9 +115,35 @@ impl Display for ScriptValidationError {
          but the configured block(s) expect one of: {}",
         expected.join(", ")
       ),
-      Self::Equation { kind, name, cause } => write!(
+      Self::Predicate { kind, name, cause } => {
+        write!(f, "{kind} \"{name}\": {cause}",)
+      }
+      Self::PrintoutDuplicateName { name } => {
+        write!(f, "duplicate printout name \"{name}\"",)
+      }
+      Self::PrintoutNotFound {
+        kind,
+        site,
+        printout,
+      } => write!(
         f,
-        "{kind} \"{name}\": {cause}",
+        "{kind} \"{site}\": references unknown printout \"{printout}\"",
+      ),
+      Self::PrintoutLabelCollision { kind, site, label } => write!(
+        f,
+        "{kind} \"{site}\": multiple referenced printouts define the same \
+         label \"{label}\"",
+      ),
+      Self::PrintoutPredicate {
+        kind,
+        site,
+        printout,
+        label,
+        cause,
+      } => write!(
+        f,
+        "{kind} \"{site}\", printout \"{printout}\", label \"{label}\": \
+         {cause}",
       ),
     };
   }

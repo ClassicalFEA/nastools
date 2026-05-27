@@ -27,7 +27,7 @@
 //! expression):
 //!
 //! ```text
-//! subcase <N> <block> <row> <col> satisfies <equation ...>
+//! subcase <N> <block> <row> <col> satisfies <predicate ...>
 //! ```
 //!
 //! - `<A> to <B>`: inclusive range `[min(A,B), max(A,B)]`.
@@ -43,7 +43,7 @@
 //!   expression; per-cell PASS iff the expression evaluates to a non-zero,
 //!   non-NaN value. Magic stat variables (`min`, `max`, `mina`, `maxa`,
 //!   `avg`, `sum`, `std`, `stdp`, `stds`, `n`) are computed across the
-//!   cartesian product. See the f06magic `script::equation` module for
+//!   cartesian product. See the f06magic `script::predicate` module for
 //!   the full grammar.
 //!
 //! `<N>`, `<row>`, and `<col>` may be comma-separated lists (no spaces);
@@ -61,12 +61,12 @@ use std::str::FromStr;
 
 use f06::prelude::*;
 
-use crate::script::equation::{
-  Equation, EquationError, EvalOutcome, Scope, Stats,
-};
 use crate::script::errors::ScriptValidationError;
 use crate::script::extraction::SimpleExtraction;
 use crate::script::index::LenientNasIndex;
+use crate::script::predicate::{
+  EvalOutcome, Predicate, PredicateError, Scope, Stats,
+};
 use crate::utils::{AnyAmount, NumListRange};
 
 /// The result of running a single one-liner cell.
@@ -107,10 +107,10 @@ pub(crate) enum Bounds {
     floor: Option<f64>,
   },
   /// `satisfies <expression>`. The cell's value is bound to `x`/`t` in the
-  /// equation; magic stats (`min`, `max`, `avg`, `std`, `stdp`, `stds`,
+  /// predicate; magic stats (`min`, `max`, `avg`, `std`, `stdp`, `stds`,
   /// `sum`, `n`) are computed across the cartesian product. PASS iff the
-  /// equation evaluates to a non-zero, non-NaN value.
-  Satisfies(Box<Equation>),
+  /// predicate evaluates to a non-zero, non-NaN value.
+  Satisfies(Box<Predicate>),
 }
 
 impl PartialEq for Bounds {
@@ -296,10 +296,10 @@ pub(crate) enum OnelinerError {
   Ambiguous(usize),
   /// The `satisfies` expression failed to parse (or referenced an
   /// out-of-scope variable).
-  EquationParse(EquationError),
+  PredicateParse(PredicateError),
   /// `satisfies` was used but every cell either failed to resolve or
   /// produced a non-finite value, leaving no values for stats.
-  EmptyEquationPool,
+  EmptyPredicatePool,
 }
 
 impl Display for OnelinerError {
@@ -310,7 +310,7 @@ impl Display for OnelinerError {
         "one-liner spec must have 8 or 10 tokens (got {n}); expected:\n  \
          subcase <N> <block> <row> <col> <A> <to|delta|percent|pct> <B>\n  \
          subcase <N> <block> <row> <col> <A> <percent|pct> <P> floor <E>\n  \
-         subcase <N> <block> <row> <col> satisfies <equation ...>",
+         subcase <N> <block> <row> <col> satisfies <predicate ...>",
       ),
       Self::BadSubcaseLiteral(t) => write!(
         f,
@@ -366,8 +366,8 @@ impl Display for OnelinerError {
         "one-liner expects a single value per cell but {n} matched; \
          narrow the spec",
       ),
-      Self::EquationParse(e) => write!(f, "{e}"),
-      Self::EmptyEquationPool => write!(
+      Self::PredicateParse(e) => write!(f, "{e}"),
+      Self::EmptyPredicatePool => write!(
         f,
         "`satisfies` needs at least one cell to resolve to a finite value; \
          the pool was empty",
@@ -425,8 +425,8 @@ pub(crate) fn parse_oneliner(
       return Err(OnelinerError::BadTokenCount(tokens.len()));
     }
     let expr = tokens[6..].join(" ");
-    let eq = Equation::parse(&expr, Scope::OnelinerCell)
-      .map_err(OnelinerError::EquationParse)?;
+    let eq = Predicate::parse(&expr, Scope::OnelinerCell)
+      .map_err(OnelinerError::PredicateParse)?;
     return Ok(OnelinerSpec {
       subcases,
       block,
@@ -632,11 +632,11 @@ pub(crate) fn run_oneliner<P: AsRef<Path>>(
 
 /// Two-pass execution for `satisfies`: first resolve every cell to a value
 /// (or per-cell error), then compute pool stats over the finite values and
-/// evaluate the equation per cell.
+/// evaluate the predicate per cell.
 fn run_oneliner_satisfies(
   f06: &F06File,
   spec: &OnelinerSpec,
-  eq: &Equation,
+  eq: &Predicate,
 ) -> Vec<CellResult> {
   // Pass 1: resolve each cell to either a value or a per-cell error.
   struct Pending {
@@ -664,19 +664,19 @@ fn run_oneliner_satisfies(
     .iter()
     .filter_map(|p| p.resolved.as_ref().ok().map(|v| (*v).into()));
   let stats = Stats::from_values(pool);
-  // Pass 2: evaluate the equation per cell.
+  // Pass 2: evaluate the predicate per cell.
   let mut results = Vec::with_capacity(pending.len());
   for p in pending {
     let outcome = match (p.resolved, &stats) {
       (Err(e), _) => CellOutcome::Error(e),
-      (Ok(_), None) => CellOutcome::Error(OnelinerError::EmptyEquationPool),
+      (Ok(_), None) => CellOutcome::Error(OnelinerError::EmptyPredicatePool),
       (Ok(v), Some(st)) => {
         let x: f64 = v.into();
         match eq.evaluate(x, None, st, None) {
           EvalOutcome::Pass { .. } => CellOutcome::Pass(v),
           EvalOutcome::Fail { .. } => CellOutcome::Fail(v),
           EvalOutcome::Error { message } => CellOutcome::Error(
-            OnelinerError::EquationParse(EquationError::Parse {
+            OnelinerError::PredicateParse(PredicateError::Parse {
               raw: eq.raw().to_owned(),
               message,
             }),
@@ -737,12 +737,12 @@ pub(crate) fn error_exit_code(err: &OnelinerError) -> i32 {
     | OnelinerError::FloorWithoutPercent(_)
     | OnelinerError::EmptyListEntry { .. }
     | OnelinerError::Validation(_)
-    | OnelinerError::EquationParse(_) => 3,
+    | OnelinerError::PredicateParse(_) => 3,
     OnelinerError::Parser(_) => 4,
     OnelinerError::Extraction(_)
     | OnelinerError::NoMatch { .. }
     | OnelinerError::Ambiguous(_)
-    | OnelinerError::EmptyEquationPool => 2,
+    | OnelinerError::EmptyPredicatePool => 2,
   };
 }
 
@@ -1116,8 +1116,8 @@ mod tests {
   }
 
   #[test]
-  fn satisfies_rejects_bad_equation() {
+  fn satisfies_rejects_bad_predicate() {
     let r = parse_oneliner("subcase 1 displacements grid_1 tx satisfies y > 0");
-    assert!(matches!(r, Err(OnelinerError::EquationParse(_))));
+    assert!(matches!(r, Err(OnelinerError::PredicateParse(_))));
   }
 }

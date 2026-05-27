@@ -1,6 +1,6 @@
 //! User-supplied boolean predicates over extracted values.
 //!
-//! An [`Equation`] is parsed once at script-prepare time (or oneliner-parse
+//! An [`Predicate`] is parsed once at script-prepare time (or oneliner-parse
 //! time) and evaluated per-datum. The grammar is a thin wrapper around
 //! [`fasteval2`]:
 //!
@@ -36,7 +36,7 @@
 //!
 //! ## Result semantics
 //!
-//! An equation evaluates to an `f64`. The datum is flagged as **FAIL** when:
+//! An predicate evaluates to an `f64`. The datum is flagged as **FAIL** when:
 //!
 //! - the result is NaN, or
 //! - the result equals `0.0` (logical false).
@@ -57,7 +57,7 @@ use std::fmt::{self, Display};
 
 use fasteval2::{Evaler, Parser, Slab};
 
-/// The scope in which an [`Equation`] is evaluated. Determines which
+/// The scope in which an [`Predicate`] is evaluated. Determines which
 /// variable names are allowed.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Scope {
@@ -180,10 +180,10 @@ const NS_FUNCTIONS: &[&str] = &["sqrt", "exp", "ln"];
 /// `pi()` / `e()` parser-level functions).
 const MATH_CONSTANTS: &[&str] = &["pi", "e"];
 
-/// A parsed equation, ready to be evaluated against per-datum values plus
+/// A parsed predicate, ready to be evaluated against per-datum values plus
 /// a precomputed [`Stats`] pool.
 #[derive(Debug)]
-pub(crate) struct Equation {
+pub(crate) struct Predicate {
   /// Original (un-preprocessed) source string, kept for human-readable
   /// reporting in flagged-datum lines.
   raw: String,
@@ -192,32 +192,32 @@ pub(crate) struct Equation {
   slab: Slab,
   /// Index of the parsed expression within `slab.ps`.
   expr_i: fasteval2::ExpressionI,
-  /// Scope this equation was parsed for.
+  /// Scope this predicate was parsed for.
   scope: Scope,
 }
 
-impl Equation {
+impl Predicate {
   /// Returns the raw (original) source string, useful for reporting.
   pub(crate) fn raw(&self) -> &str {
     return &self.raw;
   }
 
-  /// Returns the scope this equation was parsed for.
+  /// Returns the scope this predicate was parsed for.
   pub(crate) fn scope(&self) -> Scope {
     return self.scope;
   }
 
-  /// Parses and validates an equation for the given scope.
-  pub(crate) fn parse(raw: &str, scope: Scope) -> Result<Self, EquationError> {
+  /// Parses and validates an predicate for the given scope.
+  pub(crate) fn parse(raw: &str, scope: Scope) -> Result<Self, PredicateError> {
     let trimmed = raw.trim();
     if trimmed.is_empty() {
-      return Err(EquationError::Empty);
+      return Err(PredicateError::Empty);
     }
     let preprocessed = preprocess(trimmed);
     let mut slab = Slab::new();
     let parser = Parser::new();
     let expr_i = parser.parse(&preprocessed, &mut slab.ps).map_err(|e| {
-      EquationError::Parse {
+      PredicateError::Parse {
         raw: raw.to_owned(),
         message: format!("{e}"),
       }
@@ -231,7 +231,7 @@ impl Equation {
       .cloned()
       .collect();
     if !unknown.is_empty() {
-      return Err(EquationError::UnknownIdentifier {
+      return Err(PredicateError::UnknownIdentifier {
         raw: raw.to_owned(),
         unknown,
         scope,
@@ -245,7 +245,7 @@ impl Equation {
     });
   }
 
-  /// Evaluates this equation. Returns the verdict and the underlying
+  /// Evaluates this predicate. Returns the verdict and the underlying
   /// numeric result (useful for verbose reporting).
   ///
   /// `x_val` is the test value (or the single value for checks/oneliner).
@@ -262,7 +262,7 @@ impl Equation {
   ) -> EvalOutcome {
     debug_assert!(
       !(self.scope.has_reference() && (y_val.is_none() || y_stats.is_none())),
-      "comparison equation needs reference value and stats",
+      "comparison predicate needs reference value and stats",
     );
     let mut variables: BTreeMap<String, f64> = BTreeMap::new();
     populate_constants(&mut variables);
@@ -291,15 +291,15 @@ impl Equation {
   }
 }
 
-/// Outcome of evaluating an [`Equation`] against one datum.
+/// Outcome of evaluating an [`Predicate`] against one datum.
 #[derive(Clone, Debug)]
 pub(crate) enum EvalOutcome {
-  /// Equation returned a non-zero, non-NaN value.
+  /// Predicate returned a non-zero, non-NaN value.
   Pass {
     /// The numeric result (useful for diagnostic reporting).
     value: f64,
   },
-  /// Equation returned `0.0` or `NaN`.
+  /// Predicate returned `0.0` or `NaN`.
   Fail {
     /// The numeric result.
     value: f64,
@@ -319,10 +319,10 @@ impl EvalOutcome {
   }
 }
 
-/// Errors raised by [`Equation::parse`].
+/// Errors raised by [`Predicate::parse`].
 #[derive(Clone, Debug)]
-pub(crate) enum EquationError {
-  /// The equation source string was empty or whitespace-only.
+pub(crate) enum PredicateError {
+  /// The predicate source string was empty or whitespace-only.
   Empty,
   /// fasteval2 rejected the (preprocessed) expression.
   Parse {
@@ -337,17 +337,17 @@ pub(crate) enum EquationError {
     raw: String,
     /// Identifiers that were not recognised.
     unknown: Vec<String>,
-    /// Scope under which the equation was parsed.
+    /// Scope under which the predicate was parsed.
     scope: Scope,
   },
 }
 
-impl Display for EquationError {
+impl Display for PredicateError {
   fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
     return match self {
-      Self::Empty => write!(f, "equation is empty"),
+      Self::Empty => write!(f, "predicate is empty"),
       Self::Parse { raw, message } => {
-        write!(f, "could not parse equation \"{raw}\": {message}")
+        write!(f, "could not parse predicate \"{raw}\": {message}")
       }
       Self::UnknownIdentifier {
         raw,
@@ -361,7 +361,7 @@ impl Display for EquationError {
         };
         write!(
           f,
-          "equation \"{raw}\" uses identifier(s) not in scope for a \
+          "predicate \"{raw}\" uses identifier(s) not in scope for a \
            {scope_name}: {}; valid identifiers are: {}",
           unknown.join(", "),
           allowed_identifiers_pretty(*scope).join(", "),
@@ -371,9 +371,9 @@ impl Display for EquationError {
   }
 }
 
-impl std::error::Error for EquationError {}
+impl std::error::Error for PredicateError {}
 
-/// Preprocesses an equation source string into a form fasteval2 understands:
+/// Preprocesses an predicate source string into a form fasteval2 understands:
 /// lowercases everything, rewrites `**` to `^`, and replaces word-boundary
 /// keyword operators `not`, `and`, `or`, `xor` with `!`, `&&`, `||`, `!=`.
 fn preprocess(input: &str) -> String {
@@ -646,16 +646,16 @@ mod tests {
   }
 
   #[test]
-  fn equation_check_simple_comparison() {
-    let eq = Equation::parse("x < 1.0", Scope::Check).unwrap();
+  fn predicate_check_simple_comparison() {
+    let eq = Predicate::parse("x < 1.0", Scope::Check).unwrap();
     let st = stats(&[0.0, 0.5, 0.9]);
     assert!(eq.evaluate(0.5, None, &st, None).passed());
     assert!(!eq.evaluate(1.5, None, &st, None).passed());
   }
 
   #[test]
-  fn equation_check_case_insensitive() {
-    let eq = Equation::parse("X < MAX AND X > MIN", Scope::Check).unwrap();
+  fn predicate_check_case_insensitive() {
+    let eq = Predicate::parse("X < MAX AND X > MIN", Scope::Check).unwrap();
     let st = stats(&[0.0, 1.0, 2.0]);
     assert!(eq.evaluate(1.0, None, &st, None).passed());
     assert!(!eq.evaluate(0.0, None, &st, None).passed());
@@ -663,19 +663,19 @@ mod tests {
   }
 
   #[test]
-  fn equation_power_operators() {
+  fn predicate_power_operators() {
     // 2**3 == 8 and 2^3 == 8
-    let eq = Equation::parse("x == 2**3", Scope::Check).unwrap();
+    let eq = Predicate::parse("x == 2**3", Scope::Check).unwrap();
     let st = stats(&[8.0]);
     assert!(eq.evaluate(8.0, None, &st, None).passed());
-    let eq2 = Equation::parse("x == 2^3", Scope::Check).unwrap();
+    let eq2 = Predicate::parse("x == 2^3", Scope::Check).unwrap();
     assert!(eq2.evaluate(8.0, None, &st, None).passed());
   }
 
   #[test]
-  fn equation_xor_via_keyword() {
+  fn predicate_xor_via_keyword() {
     // (x > 0) xor (x > 5) is true iff 0 < x <= 5
-    let eq = Equation::parse("(x > 0) xor (x > 5)", Scope::Check).unwrap();
+    let eq = Predicate::parse("(x > 0) xor (x > 5)", Scope::Check).unwrap();
     let st = stats(&[3.0]);
     assert!(eq.evaluate(3.0, None, &st, None).passed());
     assert!(!eq.evaluate(10.0, None, &st, None).passed());
@@ -683,8 +683,8 @@ mod tests {
   }
 
   #[test]
-  fn equation_namespace_functions() {
-    let eq = Equation::parse(
+  fn predicate_namespace_functions() {
+    let eq = Predicate::parse(
       "sqrt(x) > 1 and ln(x) > 0 and exp(0) == 1",
       Scope::Check,
     )
@@ -694,16 +694,16 @@ mod tests {
   }
 
   #[test]
-  fn equation_constants() {
-    let eq = Equation::parse("x > pi and x < pi * 2", Scope::Check).unwrap();
+  fn predicate_constants() {
+    let eq = Predicate::parse("x > pi and x < pi * 2", Scope::Check).unwrap();
     let st = stats(&[5.0]);
     assert!(eq.evaluate(5.0, None, &st, None).passed());
   }
 
   #[test]
-  fn equation_three_sigma_check() {
+  fn predicate_three_sigma_check() {
     let eq =
-      Equation::parse("x >= avg - 3*std and x <= avg + 3*std", Scope::Check)
+      Predicate::parse("x >= avg - 3*std and x <= avg + 3*std", Scope::Check)
         .unwrap();
     let st = stats(&[10.0, 10.0, 10.0, 10.0]); // std = 0
     assert!(eq.evaluate(10.0, None, &st, None).passed());
@@ -711,9 +711,9 @@ mod tests {
   }
 
   #[test]
-  fn equation_comparison_uses_y_and_r() {
+  fn predicate_comparison_uses_y_and_r() {
     let eq =
-      Equation::parse("abs(x - y) <= 0.01 * rmax", Scope::Comparison).unwrap();
+      Predicate::parse("abs(x - y) <= 0.01 * rmax", Scope::Comparison).unwrap();
     let x_st = stats(&[1.0, 2.0, 3.0]);
     let y_st = stats(&[1.0, 2.0, 3.0]);
     let pass = eq.evaluate(1.005, Some(1.0), &x_st, Some(&y_st));
@@ -723,47 +723,47 @@ mod tests {
   }
 
   #[test]
-  fn equation_check_rejects_reference_variables() {
-    let err = Equation::parse("x > y", Scope::Check).unwrap_err();
-    assert!(matches!(err, EquationError::UnknownIdentifier { .. }));
-    let err2 = Equation::parse("x > rmax", Scope::Check).unwrap_err();
-    assert!(matches!(err2, EquationError::UnknownIdentifier { .. }));
+  fn predicate_check_rejects_reference_variables() {
+    let err = Predicate::parse("x > y", Scope::Check).unwrap_err();
+    assert!(matches!(err, PredicateError::UnknownIdentifier { .. }));
+    let err2 = Predicate::parse("x > rmax", Scope::Check).unwrap_err();
+    assert!(matches!(err2, PredicateError::UnknownIdentifier { .. }));
   }
 
   #[test]
-  fn equation_comparison_rejects_unprefixed_stats() {
+  fn predicate_comparison_rejects_unprefixed_stats() {
     // In Scope::Comparison, bare `min`/`max` are not in scope; must use
     // `xmin`/`tmin`/`ymin`/`rmin` etc.
-    let err = Equation::parse("x > min", Scope::Comparison).unwrap_err();
-    assert!(matches!(err, EquationError::UnknownIdentifier { .. }));
+    let err = Predicate::parse("x > min", Scope::Comparison).unwrap_err();
+    assert!(matches!(err, PredicateError::UnknownIdentifier { .. }));
   }
 
   #[test]
-  fn equation_rejects_empty_string() {
-    let err = Equation::parse("   ", Scope::Check).unwrap_err();
-    assert!(matches!(err, EquationError::Empty));
+  fn predicate_rejects_empty_string() {
+    let err = Predicate::parse("   ", Scope::Check).unwrap_err();
+    assert!(matches!(err, PredicateError::Empty));
   }
 
   #[test]
-  fn equation_nan_result_is_fail() {
+  fn predicate_nan_result_is_fail() {
     // ln(-1) == NaN
-    let eq = Equation::parse("ln(x)", Scope::Check).unwrap();
+    let eq = Predicate::parse("ln(x)", Scope::Check).unwrap();
     let st = stats(&[1.0]);
     let out = eq.evaluate(-1.0, None, &st, None);
     assert!(!out.passed());
   }
 
   #[test]
-  fn equation_zero_result_is_fail() {
-    let eq = Equation::parse("x - x", Scope::Check).unwrap();
+  fn predicate_zero_result_is_fail() {
+    let eq = Predicate::parse("x - x", Scope::Check).unwrap();
     let st = stats(&[1.0]);
     assert!(!eq.evaluate(1.0, None, &st, None).passed());
   }
 
   #[test]
-  fn equation_symbol_operators_work() {
+  fn predicate_symbol_operators_work() {
     let eq =
-      Equation::parse("!(x < 0) && x < 10 || x == 42", Scope::Check).unwrap();
+      Predicate::parse("!(x < 0) && x < 10 || x == 42", Scope::Check).unwrap();
     let st = stats(&[5.0]);
     assert!(eq.evaluate(5.0, None, &st, None).passed());
     assert!(!eq.evaluate(-1.0, None, &st, None).passed());
@@ -778,8 +778,8 @@ mod tests {
   }
 
   #[test]
-  fn equation_mina_maxa_in_check_scope() {
-    let eq = Equation::parse("abs(x) >= mina and abs(x) <= maxa", Scope::Check)
+  fn predicate_mina_maxa_in_check_scope() {
+    let eq = Predicate::parse("abs(x) >= mina and abs(x) <= maxa", Scope::Check)
       .unwrap();
     let st = stats(&[-5.0, -1.0, 2.0, 3.0]);
     assert!(eq.evaluate(2.0, None, &st, None).passed());
@@ -790,12 +790,12 @@ mod tests {
   }
 
   #[test]
-  fn equation_mina_maxa_in_comparison_scope_need_prefix() {
+  fn predicate_mina_maxa_in_comparison_scope_need_prefix() {
     // Bare mina/maxa are not in scope for comparisons -- must be xmina /
     // rmaxa / etc.
-    let err = Equation::parse("x >= mina", Scope::Comparison).unwrap_err();
-    assert!(matches!(err, EquationError::UnknownIdentifier { .. }));
-    let eq = Equation::parse(
+    let err = Predicate::parse("x >= mina", Scope::Comparison).unwrap_err();
+    assert!(matches!(err, PredicateError::UnknownIdentifier { .. }));
+    let eq = Predicate::parse(
       "abs(x - y) <= 0.01 * rmaxa or abs(x) <= xmina",
       Scope::Comparison,
     )
@@ -809,8 +809,8 @@ mod tests {
   fn min_max_variable_and_function_coexist() {
     // The parser disambiguates by parentheses: `min`/`max` with no parens
     // is the pool-stats variable, `min(..)` / `max(..)` is the built-in
-    // function. Both must work in the same equation.
-    let eq = Equation::parse(
+    // function. Both must work in the same predicate.
+    let eq = Predicate::parse(
       "x >= min and x <= max and x == max(min, x)",
       Scope::Check,
     )
@@ -823,7 +823,7 @@ mod tests {
 
     // Spot-check that the built-in functions still compute what they should
     // when used alongside the variables.
-    let eq2 = Equation::parse(
+    let eq2 = Predicate::parse(
       "min(x, max) == min and max(x, min) == max",
       Scope::Check,
     )

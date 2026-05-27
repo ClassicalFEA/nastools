@@ -51,13 +51,13 @@ struct Cli {
   ///   subcase <N> <block> <row> <col> <A> <percent|pct> <P> [floor <E>]
   ///   subcase <N> <block> <row> <col> <A> ± <B>        (alias: +-)
   ///   subcase <N> <block> <row> <col> <A> ± <P>% [floor <E>]
-  ///   subcase <N> <block> <row> <col> satisfies <equation ...>
+  ///   subcase <N> <block> <row> <col> satisfies <predicate ...>
   ///
   /// `to` is an inclusive range; `delta` / `±` is `[A - B, A + B]` (B >= 0);
   /// `percent` / `pct` matches `100*|test/A - 1| <= P`; `floor <E>` lets near-
   /// zero pairs pass when both `|A|` and `|test|` fall below `E`.
   ///
-  /// `satisfies <expr>` evaluates a user-supplied boolean equation per cell;
+  /// `satisfies <expr>` evaluates a user-supplied boolean predicate per cell;
   /// the cell's value is bound to `x` (or `t`). Available operators include
   /// `+ - * / % ** ^`, comparisons `== != < <= > >=`, and boolean
   /// `! && ||` (or `not`/`and`/`or`/`xor`). Functions: `abs`, `sqrt`,
@@ -102,7 +102,11 @@ fn run_script<P: AsRef<Path>>(
   for comp in script.comparisons.keys() {
     let res = script.run_comparison(comp)?;
     let total_failures = res.flagged.len() + res.empty_extractions.len();
-    let pass = if total_failures == 0 { "PASSED" } else { "FAILED" };
+    let pass = if total_failures == 0 {
+      "PASSED"
+    } else {
+      "FAILED"
+    };
     flagged_total += total_failures;
     println!("==> {comp}: {pass}");
     println!("  => checked: {}", res.checked.len());
@@ -136,14 +140,16 @@ fn run_script<P: AsRef<Path>>(
     for ((f, ex), rp) in res.per_pair.iter() {
       let extra = if rp.empty_violation { 1 } else { 0 };
       let total_failures = rp.flagged.len() + extra;
-      let pass = if total_failures == 0 { "PASSED" } else { "FAILED" };
+      let pass = if total_failures == 0 {
+        "PASSED"
+      } else {
+        "FAILED"
+      };
       let a = rp.flagged.len();
       let b = rp.checked.len();
       flagged_total += total_failures;
       if rp.empty_violation {
-        println!(
-          "  => {f}, {ex}: {pass} ({a}/{b} flagged, extraction empty)"
-        );
+        println!("  => {f}, {ex}: {pass} ({a}/{b} flagged, extraction empty)");
       } else {
         println!("  => {f}, {ex}: {pass} ({a}/{b} flagged)");
       }
@@ -170,7 +176,7 @@ fn run_script<P: AsRef<Path>>(
 
 /// Formats a flagged comparison datum as a single verbose line.
 fn fmt_comparison_failure(di: &DatumIndex, det: &FlaggedDetail) -> String {
-  return format!(
+  let head = format!(
     "subcase={} block={} row={} col={}: ref={} test={}  [{}]",
     di.block_ref.subcase,
     di.block_ref.block_type.short_name(),
@@ -180,15 +186,16 @@ fn fmt_comparison_failure(di: &DatumIndex, det: &FlaggedDetail) -> String {
     det.test_val,
     fmt_reason2(&det.reason),
   );
+  return append_printouts(head, &det.printouts);
 }
 
 /// Formats a magic-side [`FlagReason2`] for verbose output.
 fn fmt_reason2(reason: &FlagReason2) -> String {
   return match reason {
     FlagReason2::Criteria(r) => fmt_reason(r),
-    FlagReason2::Equation { raw, value, error } => match error {
-      Some(msg) => format!("equation \"{raw}\" error: {msg}"),
-      None => format!("equation \"{raw}\" = {value}"),
+    FlagReason2::Predicate { raw, value, error } => match error {
+      Some(msg) => format!("predicate \"{raw}\" error: {msg}"),
+      None => format!("predicate \"{raw}\" = {value}"),
     },
   };
 }
@@ -238,12 +245,12 @@ fn fmt_check_failure(di: &DatumIndex, fail: &CheckFailure) -> String {
     CheckRule::Ranges { idx, lo, hi } => {
       format!("ranges[{idx}]: outside [{lo}, {hi}]")
     }
-    CheckRule::Equation { raw, value, error } => match error {
-      Some(msg) => format!("equation \"{raw}\" error: {msg}"),
-      None => format!("equation \"{raw}\" = {value}"),
+    CheckRule::Predicate { raw, value, error } => match error {
+      Some(msg) => format!("predicate \"{raw}\" error: {msg}"),
+      None => format!("predicate \"{raw}\" = {value}"),
     },
   };
-  return format!(
+  let head = format!(
     "subcase={} block={} row={} col={}: value={}  [{rule}]",
     di.block_ref.subcase,
     di.block_ref.block_type.short_name(),
@@ -251,6 +258,27 @@ fn fmt_check_failure(di: &DatumIndex, fail: &CheckFailure) -> String {
     di.col,
     fail.value,
   );
+  return append_printouts(head, &fail.printouts);
+}
+
+/// If any printout values are present, appends them as a single
+/// space-separated `printouts: label=value ...` segment.
+fn append_printouts(
+  head: String,
+  values: &[(String, crate::script::printout::PrintoutValue)],
+) -> String {
+  if values.is_empty() {
+    return head;
+  }
+  let mut s = head;
+  s.push_str("  printouts:");
+  for (label, val) in values {
+    s.push(' ');
+    s.push_str(label);
+    s.push('=');
+    s.push_str(&val.render());
+  }
+  return s;
 }
 
 /// Reports the outcome of a one-liner run on stdout/stderr and computes
