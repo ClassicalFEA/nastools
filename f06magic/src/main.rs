@@ -176,16 +176,24 @@ fn run_script<P: AsRef<Path>>(
 
 /// Formats a flagged comparison datum as a single verbose line.
 fn fmt_comparison_failure(di: &DatumIndex, det: &FlaggedDetail) -> String {
-  let head = format!(
-    "subcase={} block={} row={} col={}: ref={} test={}  [{}]",
+  let has_printouts = !det.printouts.is_empty();
+  let coords = format!(
+    "subcase={} block={} row={} col={}",
     di.block_ref.subcase,
     di.block_ref.block_type.short_name(),
     di.row,
     di.col,
-    det.ref_val,
-    det.test_val,
-    fmt_reason2(&det.reason),
   );
+  let head = if has_printouts {
+    format!("{coords}:  [{}]", fmt_reason2(&det.reason))
+  } else {
+    format!(
+      "{coords}: ref={} test={}  [{}]",
+      det.ref_val,
+      det.test_val,
+      fmt_reason2(&det.reason),
+    )
+  };
   return append_printouts(head, &det.printouts);
 }
 
@@ -193,9 +201,9 @@ fn fmt_comparison_failure(di: &DatumIndex, det: &FlaggedDetail) -> String {
 fn fmt_reason2(reason: &FlagReason2) -> String {
   return match reason {
     FlagReason2::Criteria(r) => fmt_reason(r),
-    FlagReason2::Predicate { raw, value, error } => match error {
+    FlagReason2::Predicate { raw, error, .. } => match error {
       Some(msg) => format!("predicate \"{raw}\" error: {msg}"),
-      None => format!("predicate \"{raw}\" = {value}"),
+      None => format!("predicate \"{raw}\""),
     },
   };
 }
@@ -245,19 +253,24 @@ fn fmt_check_failure(di: &DatumIndex, fail: &CheckFailure) -> String {
     CheckRule::Ranges { idx, lo, hi } => {
       format!("ranges[{idx}]: outside [{lo}, {hi}]")
     }
-    CheckRule::Predicate { raw, value, error } => match error {
+    CheckRule::Predicate { raw, error, .. } => match error {
       Some(msg) => format!("predicate \"{raw}\" error: {msg}"),
-      None => format!("predicate \"{raw}\" = {value}"),
+      None => format!("predicate \"{raw}\""),
     },
   };
-  let head = format!(
-    "subcase={} block={} row={} col={}: value={}  [{rule}]",
+  let has_printouts = !fail.printouts.is_empty();
+  let coords = format!(
+    "subcase={} block={} row={} col={}",
     di.block_ref.subcase,
     di.block_ref.block_type.short_name(),
     di.row,
     di.col,
-    fail.value,
   );
+  let head = if has_printouts {
+    format!("{coords}:  [{rule}]")
+  } else {
+    format!("{coords}: value={}  [{rule}]", fail.value)
+  };
   return append_printouts(head, &fail.printouts);
 }
 
