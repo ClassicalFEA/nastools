@@ -107,25 +107,25 @@ fn test_line_breakdown_splits_glued_exponent() {
     ref other => panic!("unexpected: {other:?}"),
   }
 
-  // No collision — must pass through untouched.
+  // No collision -- must pass through untouched.
   match fields("1.293243E+03")[..] {
     [LineField::Real(x)] => near(x, 1.293243e3),
     ref other => panic!("unexpected: {other:?}"),
   }
 
-  // Plain integer — untouched.
+  // Plain integer -- untouched.
   match fields("12345")[..] {
     [LineField::Integer(12345)] => {}
     ref other => panic!("unexpected: {other:?}"),
   }
 
-  // Plain decimal without exponent — untouched.
+  // Plain decimal without exponent -- untouched.
   match fields("1.23")[..] {
     [LineField::Real(x)] => near(x, 1.23),
     ref other => panic!("unexpected: {other:?}"),
   }
 
-  // Tail doesn't start with a digit — must NOT split.
+  // Tail doesn't start with a digit -- must NOT split.
   // `1.5E+03ROD` would not be a glued-ID case; we should leave it alone so
   // the `ElementType`/`NoIdea` matcher can handle it.
   let f = fields("1.5E+03ROD");
@@ -135,7 +135,7 @@ fn test_line_breakdown_splits_glued_exponent() {
     LineField::ElementType(_) | LineField::NoIdea(_) | LineField::Real(_)
   ));
 
-  // 1-digit exponent (shouldn't appear in F06, but defensive) — untouched.
+  // 1-digit exponent (shouldn't appear in F06, but defensive) -- untouched.
   match fields("1.234567E+1")[..] {
     [LineField::Real(x)] => near(x, 1.234567e1),
     ref other => panic!("unexpected: {other:?}"),
@@ -145,13 +145,8 @@ fn test_line_breakdown_splits_glued_exponent() {
   let f = fields("5  0.000000E+00  0.000000E+0022345678  1.293243E+03");
   assert_eq!(f.len(), 5, "fields: {f:?}");
   match f[..] {
-    [
-      LineField::Integer(5),
-      LineField::Real(a),
-      LineField::Real(b),
-      LineField::Integer(22345678),
-      LineField::Real(c),
-    ] => {
+    [LineField::Integer(5), LineField::Real(a), LineField::Real(b), LineField::Integer(22345678), LineField::Real(c)] =>
+    {
       near(a, 0.0);
       near(b, 0.0);
       near(c, 1.293243e3);

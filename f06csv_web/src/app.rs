@@ -168,7 +168,7 @@ pub fn app() -> Html {
   // -------- auto-update effect ------------------------------------------
   //
   // Whenever the options, the loaded file, or the auto-update preference
-  // changes, re-run the conversion in the background — but only if the
+  // changes, re-run the conversion in the background -- but only if the
   // user has the toggle on and there's actually a file loaded.
   {
     let options_dep = (*options).clone();

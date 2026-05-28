@@ -509,7 +509,7 @@ impl Display for IndexHelp {
      -> std::fmt::Result {
       write!(f, "  {label}: {kind}")?;
       match legal {
-        Some(v) if !v.is_empty() => writeln!(f, " — {}", v.join(", ")),
+        Some(v) if !v.is_empty() => writeln!(f, ": {}", v.join(", ")),
         _ => writeln!(f, " ({})", open_ended_hint(kind)),
       }
     };

@@ -1,4 +1,4 @@
-/* f06csv_web — custom styles on top of Skeleton.css */
+/* f06csv_web -- custom styles on top of Skeleton.css */
 
 /* Widen Skeleton's narrow 960px container so the app uses more of the
  * available viewport on PC-sized screens, while still leaving comfortable
@@ -158,7 +158,9 @@ html[data-theme="dark"] input[type="radio"] {
   padding: 0.4rem 1rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease,
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
     color 0.12s ease;
 }
 
@@ -224,7 +226,9 @@ html[data-theme="dark"] input[type="radio"] {
   text-align: center;
   color: var(--muted);
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
 }
 
 .drop-zone.dragging {

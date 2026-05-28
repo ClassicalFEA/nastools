@@ -146,7 +146,7 @@ impl<'s> LineField<'s> {
 
 /// Splits a token that begins with a Fortran `1PE…`-style scientific float
 /// glued to a trailing field. F06 prints reals as `[+-]d.dddddde[+-]dd` (two
-/// exponent digits — Fortran `1PE13.6`), so when right-justified columns
+/// exponent digits -- Fortran `1PE13.6`), so when right-justified columns
 /// collide we can see things like `0.000000E+0022345678` (a zero abutting an
 /// element ID). This helper recognises that pattern and returns the float
 /// prefix (up through the 2-digit exponent) and the leftover tail. Returns

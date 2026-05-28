@@ -7,7 +7,7 @@
 #   DEST=user@host:/var/www/html/f06csv/ ./deploy.sh
 #
 # Requires (locally): rustup, the wasm32-unknown-unknown target, trunk, rsync.
-# Optional but recommended: wasm-opt (from the `binaryen` package) — trunk
+# Optional but recommended: wasm-opt (from the `binaryen` package) -- trunk
 # will pick it up automatically and shave a lot off the .wasm file.
 
 set -euo pipefail
@@ -42,7 +42,7 @@ echo "==> Rsyncing to ${DEST}"
 # -z   compress over the wire
 # -h   human-readable sizes
 # --delete  remove files on the server that no longer exist locally
-# Note the trailing slash on dist/ — copies *contents*, not the dir itself.
+# Note the trailing slash on dist/ -- copies *contents*, not the dir itself.
 rsync -avzh --delete ${RSYNC_EXTRA} dist/ "${DEST}"
 
 echo "==> Done."

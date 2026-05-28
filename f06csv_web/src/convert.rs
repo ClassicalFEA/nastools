@@ -1,5 +1,5 @@
 //! Pure conversion logic. Takes a byte slice and an [`Options`] value and
-//! returns the CSV text — no I/O outside the supplied byte slice.
+//! returns the CSV text -- no I/O outside the supplied byte slice.
 
 use std::io::{BufReader, Cursor};
 
