@@ -10,13 +10,11 @@ use std::io::{self, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
 use clap::Parser;
-use clap::ValueEnum;
 use csv::Terminator;
 use f06::prelude::*;
 use log::*;
 use nas_csv::from_f06::templates::all_converters;
 use nas_csv::prelude::*;
-use serde::{Deserialize, Serialize};
 
 /// help template for clap args parser
 const HELP_TEMPLATE: &str = "{name} - {version}
@@ -114,6 +112,7 @@ struct Cli {
   #[arg(short = 'v', long = "verbose", verbatim_doc_comment)]
   verbose: bool,
   /// Dump a CSV containing all blocks' headers and column numbers and exit.
+  #[arg(long = "headers_csv", verbatim_doc_comment)]
   headers_csv: bool,
   /// The name of the input F06 file.
   ///
