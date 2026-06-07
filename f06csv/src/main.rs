@@ -10,11 +10,13 @@ use std::io::{self, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
 use clap::Parser;
+use clap::ValueEnum;
 use csv::Terminator;
 use f06::prelude::*;
 use log::*;
 use nas_csv::from_f06::templates::all_converters;
 use nas_csv::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// help template for clap args parser
 const HELP_TEMPLATE: &str = "{name} - {version}
@@ -111,9 +113,12 @@ struct Cli {
   /// Output extra/debug info while parsing and converting.
   #[arg(short = 'v', long = "verbose", verbatim_doc_comment)]
   verbose: bool,
+  /// Dump a CSV containing all blocks' headers and column numbers and exit.
+  headers_csv: bool,
   /// The name of the input F06 file.
   ///
-  /// If -, reads from standard input.
+  /// If - or absent, reads from standard input.
+  #[arg(default_value = "-")]
   input: PathBuf,
 }
 
@@ -126,6 +131,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     LevelFilter::Info
   };
   env_logger::builder().filter_level(log_level).init();
+  // check for debug options
+  if args.headers_csv {
+    println!("block_name,row_num,1,2,3,4,5,6,7,8,9,10,11");
+    all_converters().iter().for_each(|(bt, ct)| {
+      ct.headers.iter().enumerate().for_each(|(row, header)| {
+        println!("{},{},{}", bt.snake_case_name(), row + 1, header.join(","));
+      })
+    });
+    return Ok(());
+  }
   // parse the file
   let mut f06: F06File = if args.input.as_os_str().eq_ignore_ascii_case("-") {
     OnePassParser::parse_bufread(BufReader::new(io::stdin()))?
